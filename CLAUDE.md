@@ -15,11 +15,15 @@ Owner: Baraon (GitHub `baraon`), based in America/Chicago, develops on Windows.
 ## Current status
 
 - **Phase 0 (platform setup): done.** Monorepo, Docker Compose dev stack, Postgres schema, CI.
-- **Phase 1 (Discord login): built**, awaiting the owner's real sign-in check. See `docs/PLAN.md`.
-  Auth code lives in `apps/api/src/auth/` (Discord client, sessions, `requireUser` preHandler for
-  routes that need a signed-in user) and `apps/api/src/routes/{auth,me}.ts`. `users.timezone` is
-  nullable: `NULL` = not chosen yet, and the web app saves the browser's zone on first login.
-  `DISCORD_REDIRECT_URI` defaults to `APP_URL/auth/discord/callback`.
+- **Phase 1 (Discord login): done.** Auth code lives in `apps/api/src/auth/` (Discord client,
+  sessions, `requireUser` preHandler) and `apps/api/src/routes/{auth,me}.ts`. `users.timezone` is
+  nullable: `NULL` = not chosen yet; the web app saves the browser's zone on first login.
+  `DISCORD_REDIRECT_URI` defaults to `APP_URL/auth/discord/callback`. Login accepts
+  `?returnTo=/path` (same-site paths only) so invite links survive sign-in.
+- **Phase 2 (groups, teams, events): built**, awaiting the owner's check. Routes in
+  `apps/api/src/routes/{groups,invites,teams,events}.ts`; authorization helpers in
+  `apps/api/src/auth/permissions.ts` (non-members get 404, members lacking a flag get 403).
+- **Phase 3 (availability editor): next.**
 - A Discord application exists; its client ID/secret are in the owner's local `.env` only.
 - Production domain: **not decided.** Hosting: cheapest option, one small VPS with Docker Compose.
 
@@ -58,6 +62,12 @@ Owner: Baraon (GitHub `baraon`), based in America/Chicago, develops on Windows.
   driver edits their own; owner/admins with `can_manage_availability` can edit anyone's. Saving
   replaces the driver's whole row for that event in one transaction.
 - Authorization is checked in the API on every request against `group_members`.
+- Every member of a group sees all of its teams and events. Only the owner grants or revokes
+  admin flags. `can_manage_members` covers invites and removing drivers; only the owner removes
+  admins. The owner can't leave (only delete the group). Invite tokens are shown once at creation;
+  only their SHA-256 is stored.
+- Event times cross the API as UTC ISO strings (`...Z`). The web form takes a wall-clock time in
+  a chosen zone and converts it with `fromZonedInput` (DST-safe) from `packages/shared`.
 
 Schema source of truth: `apps/api/migrations/*.sql` (plain SQL, applied in order by
 `apps/api/src/db/migrate.ts`). `apps/api/src/db/schema.ts` is the Drizzle typed mirror; keep it

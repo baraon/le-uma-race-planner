@@ -14,7 +14,8 @@
     "@lmu/shared": "workspace:*",
     "@tanstack/react-query": "^5.75.0",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.0",

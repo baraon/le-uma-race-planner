@@ -96,3 +96,43 @@ export function localDayChanged(a: Date, b: Date, timeZone: string): boolean {
   const pb = zonedParts(b, timeZone);
   return pa.year !== pb.year || pa.month !== pb.month || pa.day !== pb.day;
 }
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const pad2 = (n: number) => String(n).padStart(2, '0');
+
+/** "Sat 14 Nov 2026, 18:00" in the given zone (24-hour clock). */
+export function formatDateTime(instant: Date, timeZone: string): string {
+  const p = zonedParts(instant, timeZone);
+  return `${p.weekday} ${p.day} ${MONTHS[p.month - 1]} ${p.year}, ${pad2(p.hour)}:${pad2(p.minute)}`;
+}
+
+/** The instant as a wall-clock "YYYY-MM-DDTHH:mm" in `timeZone` (the datetime-local format). */
+export function toZonedInput(instant: Date, timeZone: string): string {
+  const p = zonedParts(instant, timeZone);
+  return `${p.year}-${pad2(p.month)}-${pad2(p.day)}T${pad2(p.hour)}:${pad2(p.minute)}`;
+}
+
+const LOCAL_INPUT = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/;
+const HOUR_MS = 3_600_000;
+
+/**
+ * The instant a wall-clock time "YYYY-MM-DDTHH:mm" happens in `timeZone`. Around daylight-saving
+ * changes: a time that happens twice (clocks go back) resolves to the first one; a time that
+ * never happens (clocks go forward) moves forward by the gap, e.g. 02:30 → 03:30.
+ */
+export function fromZonedInput(local: string, timeZone: string): Date {
+  const m = LOCAL_INPUT.exec(local);
+  if (!m) throw new RangeError(`Expected YYYY-MM-DDTHH:mm, got "${local}"`);
+  const [y, mo, d, h, mi] = m.slice(1).map(Number) as [number, number, number, number, number];
+  const wall = Date.UTC(y, mo - 1, d, h, mi);
+
+  // Offsets in force half a day either side cover any single transition.
+  const before = zoneOffsetMinutes(new Date(wall - 12 * HOUR_MS), timeZone);
+  const after = zoneOffsetMinutes(new Date(wall + 12 * HOUR_MS), timeZone);
+  const matches = [...new Set([before, after])]
+    .map((offset) => new Date(wall - offset * 60_000))
+    .filter((t) => toZonedInput(t, timeZone) === local)
+    .sort((a, b) => a.getTime() - b.getTime());
+
+  return matches[0] ?? new Date(wall - before * 60_000);
+}

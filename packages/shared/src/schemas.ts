@@ -45,7 +45,143 @@ export const meSchema = z.object({
 
 export const updateMeSchema = z.object({ timezone: timeZoneSchema }).strict();
 
+// --- Groups, teams, events (Phase 2) ---
+
+const uuid = z.string().uuid();
+const name = (max: number) => z.string().trim().min(1).max(max);
+/** Optional free text: empty or missing becomes null. */
+const optionalText = (max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max)
+    .nullish()
+    .transform((v) => v || null);
+
+export const PERMISSIONS = [
+  'manageMembers',
+  'manageTeams',
+  'manageEvents',
+  'manageAvailability',
+] as const;
+export type Permission = (typeof PERMISSIONS)[number];
+
+export const permissionsSchema = z.object({
+  manageMembers: z.boolean(),
+  manageTeams: z.boolean(),
+  manageEvents: z.boolean(),
+  manageAvailability: z.boolean(),
+});
+
+export const groupRoleSchema = z.enum(['owner', 'admin', 'member']);
+
+export const userSummarySchema = meSchema;
+
+export const groupSummarySchema = z.object({
+  id: uuid,
+  name: z.string(),
+  /** The viewer's role and effective permissions (the owner has all of them). */
+  role: groupRoleSchema,
+  permissions: permissionsSchema,
+  memberCount: z.number().int(),
+});
+
+export const memberSchema = z.object({
+  user: userSummarySchema,
+  role: groupRoleSchema,
+  /** Stored flags; the owner's are all false because the owner implicitly has everything. */
+  permissions: permissionsSchema,
+  joinedAt: z.string().datetime(),
+});
+
+export const teamSchema = z.object({
+  id: uuid,
+  name: z.string(),
+  memberIds: z.array(uuid),
+});
+
+export const groupDetailSchema = groupSummarySchema.extend({
+  ownerId: uuid,
+  members: z.array(memberSchema),
+  teams: z.array(teamSchema),
+});
+
+export const createGroupSchema = z.object({ name: name(80) }).strict();
+export const createTeamSchema = z.object({ name: name(80) }).strict();
+export const updateMemberSchema = permissionsSchema.strict();
+
+export const createInviteSchema = z
+  .object({
+    /** null = never expires. */
+    expiresInHours: z
+      .number()
+      .int()
+      .min(1)
+      .max(24 * 30)
+      .nullable(),
+    /** null = unlimited. */
+    maxUses: z.number().int().min(1).max(1000).nullable(),
+  })
+  .strict();
+
+export const inviteSchema = z.object({
+  id: uuid,
+  expiresAt: z.string().datetime().nullable(),
+  maxUses: z.number().int().nullable(),
+  useCount: z.number().int(),
+  createdAt: z.string().datetime(),
+});
+
+/** Returned once, at creation: the token is never stored, only its hash. */
+export const createdInviteSchema = inviteSchema.extend({ token: z.string() });
+
+export const invitePreviewSchema = z.object({
+  groupId: uuid,
+  groupName: z.string(),
+  memberCount: z.number().int(),
+  alreadyMember: z.boolean(),
+});
+
+export const eventInputSchema = z
+  .object({
+    name: name(120),
+    /** Green flag as a UTC instant, e.g. "2026-11-14T18:00:00Z". */
+    startsAt: z.string().datetime(),
+    durationMinutes: z.number().int().min(15).max(2880),
+    track: optionalText(80),
+    carClass: optionalText(40),
+    trackTimezone: timeZoneSchema.nullish().transform((v) => v ?? null),
+  })
+  .strict();
+
+export const eventSchema = z.object({
+  id: uuid,
+  teamId: uuid,
+  teamName: z.string(),
+  groupId: uuid,
+  groupName: z.string(),
+  name: z.string(),
+  startsAt: z.string().datetime(),
+  durationMinutes: z.number().int(),
+  track: z.string().nullable(),
+  carClass: z.string().nullable(),
+  trackTimezone: z.string().nullable(),
+});
+
 export type SaveAvailability = z.infer<typeof saveAvailabilitySchema>;
 export type HealthResponse = z.infer<typeof healthResponseSchema>;
 export type Me = z.infer<typeof meSchema>;
 export type UpdateMe = z.infer<typeof updateMeSchema>;
+export type Permissions = z.infer<typeof permissionsSchema>;
+export type GroupRole = z.infer<typeof groupRoleSchema>;
+export type UserSummary = z.infer<typeof userSummarySchema>;
+export type GroupSummary = z.infer<typeof groupSummarySchema>;
+export type Member = z.infer<typeof memberSchema>;
+export type Team = z.infer<typeof teamSchema>;
+export type GroupDetail = z.infer<typeof groupDetailSchema>;
+export type CreateInvite = z.infer<typeof createInviteSchema>;
+export type Invite = z.infer<typeof inviteSchema>;
+export type CreatedInvite = z.infer<typeof createdInviteSchema>;
+export type InvitePreview = z.infer<typeof invitePreviewSchema>;
+export type EventInput = z.input<typeof eventInputSchema>;
+export type RaceEvent = z.infer<typeof eventSchema>;

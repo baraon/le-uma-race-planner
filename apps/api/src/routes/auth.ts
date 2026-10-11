@@ -17,6 +17,13 @@ const STATE_TTL_SECONDS = 10 * 60;
 /** Login and logout are cheap to abuse; keep them well under the global limit. */
 const rateLimit = { max: 20, timeWindow: '1 minute' };
 
+/** Where to land after login: a same-site path only, never `//host` or a full URL. */
+const returnToSchema = z
+  .string()
+  .max(200)
+  .regex(/^\/(?!\/)[\w\-./~%?=&]*$/)
+  .catch('/');
+
 const callbackQuery = z.object({
   code: z.string().min(1).max(512).optional(),
   state: z.string().min(1).max(512).optional(),
@@ -40,14 +47,19 @@ export const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (
   app,
   { db, discord, appUrl },
 ) => {
-  const backToApp = (reason?: 'denied' | 'failed' | 'unavailable') =>
-    reason ? `${appUrl}/?login=${reason}` : `${appUrl}/`;
+  const backToApp = (path = '/', reason?: 'denied' | 'failed' | 'unavailable') => {
+    const url = new URL(path, appUrl);
+    if (reason) url.searchParams.set('login', reason);
+    return url.href;
+  };
 
-  app.get('/discord', { config: { rateLimit } }, async (_req, reply) => {
-    if (!discord) return reply.redirect(backToApp('unavailable'));
+  app.get('/discord', { config: { rateLimit } }, async (req, reply) => {
+    const returnTo = returnToSchema.parse((req.query as { returnTo?: unknown }).returnTo);
+    if (!discord) return reply.redirect(backToApp(returnTo, 'unavailable'));
 
+    // The state and the return path travel together in one signed cookie.
     const state = randomBytes(32).toString('base64url');
-    reply.setCookie(STATE_COOKIE, state, {
+    reply.setCookie(STATE_COOKIE, `${state}|${returnTo}`, {
       path: '/auth/discord',
       httpOnly: true,
       secure: true,
@@ -61,24 +73,24 @@ export const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (
   app.get('/discord/callback', { config: { rateLimit } }, async (req, reply) => {
     const signedState = req.cookies[STATE_COOKIE];
     reply.clearCookie(STATE_COOKIE, { path: '/auth/discord' });
-    if (!discord) return reply.redirect(backToApp('unavailable'));
+    const unsigned = signedState ? req.unsignCookie(signedState) : null;
+    const cookieValue = unsigned?.valid ? (unsigned.value ?? '') : '';
+    const split = cookieValue.indexOf('|');
+    const expectedState = split > 0 ? cookieValue.slice(0, split) : null;
+    const returnTo = returnToSchema.parse(split > 0 ? cookieValue.slice(split + 1) : '/');
+    if (!discord) return reply.redirect(backToApp(returnTo, 'unavailable'));
 
     const query = callbackQuery.safeParse(req.query);
-    if (!query.success) return reply.redirect(backToApp('failed'));
+    if (!query.success) return reply.redirect(backToApp(returnTo, 'failed'));
     const { code, state, error } = query.data;
-    if (error) return reply.redirect(backToApp(error === 'access_denied' ? 'denied' : 'failed'));
+    if (error) {
+      return reply.redirect(backToApp(returnTo, error === 'access_denied' ? 'denied' : 'failed'));
+    }
 
     // CSRF: the state Discord echoes back must match the one we put in our signed cookie.
-    const expected = signedState ? req.unsignCookie(signedState) : null;
-    if (
-      !code ||
-      !state ||
-      !expected?.valid ||
-      !expected.value ||
-      !sameString(expected.value, state)
-    ) {
+    if (!code || !state || !expectedState || !sameString(expectedState, state)) {
       req.log.warn('Discord callback with missing or mismatched state');
-      return reply.redirect(backToApp('failed'));
+      return reply.redirect(backToApp(returnTo, 'failed'));
     }
 
     let profile;
@@ -86,7 +98,7 @@ export const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (
       profile = await discord.fetchUser(code);
     } catch (err) {
       req.log.warn({ err }, 'Discord login failed');
-      return reply.redirect(backToApp('failed'));
+      return reply.redirect(backToApp(returnTo, 'failed'));
     }
 
     const user = await upsertDiscordUser(db, {
@@ -101,7 +113,7 @@ export const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (
     if (previous) await deleteSession(db, previous);
     const { token, expiresAt } = await createSession(db, user.id);
     setSessionCookie(reply, token, expiresAt);
-    return reply.redirect(backToApp());
+    return reply.redirect(backToApp(returnTo));
   });
 
   app.post('/logout', { config: { rateLimit } }, async (req, reply) => {

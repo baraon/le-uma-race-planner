@@ -1,30 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { chunkOf, defaultStep, paintChunks, rowsFor } from './paint';
+import { paintRange, rowsFor } from './paint';
 
-describe('brush steps', () => {
-  it('defaults by race length', () => {
-    expect(defaultStep(24)).toBe(1); // 6 h
-    expect(defaultStep(47)).toBe(1);
-    expect(defaultStep(48)).toBe(2); // 12 h
-    expect(defaultStep(96)).toBe(4); // 24 h
-  });
+const show = (p: (string | null)[]) => p.map((s) => (s ? 'A' : '.')).join('');
 
-  it('finds chunks aligned to the green flag, clipped at the end', () => {
-    expect(chunkOf(5, 4, 96)).toEqual([4, 8]);
-    expect(chunkOf(0, 2, 96)).toEqual([0, 2]);
-    expect(chunkOf(6, 4, 7)).toEqual([4, 7]); // final partial chunk
-  });
-
-  it('paints whole chunks across a drag in either direction', () => {
-    const empty = Array.from({ length: 12 }, () => null);
-    const forward = paintChunks(empty, 1, 5, 4, 'available');
-    expect(forward.map((s) => (s ? 'A' : '.')).join('')).toBe('AAAAAAAA....');
-    expect(paintChunks(empty, 5, 1, 4, 'available')).toEqual(forward);
-    expect(
-      paintChunks(forward, 2, 2, 1, null)
-        .map((s) => (s ? 'A' : '.'))
-        .join(''),
-    ).toBe('AA.AAAAA....');
+describe('paintRange', () => {
+  it('paints an inclusive range in either direction', () => {
+    const empty = Array.from({ length: 8 }, () => null);
+    const forward = paintRange(empty, 1, 4, 'available');
+    expect(show(forward)).toBe('.AAAA...');
+    expect(paintRange(empty, 4, 1, 'available')).toEqual(forward);
+    expect(show(paintRange(forward, 2, 2, null))).toBe('.A.AA...');
   });
 });
 

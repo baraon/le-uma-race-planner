@@ -25,7 +25,7 @@ Owner: Baraon (GitHub `baraon`), based in America/Chicago, develops on Windows.
   `apps/api/src/auth/permissions.ts` (non-members get 404, members lacking a flag get 403).
 - **Phase 3 (availability editor): done.** API in `apps/api/src/routes/availability.ts` +
   `apps/api/src/db/availability.ts`; editor in `apps/web/src/pages/AvailabilityEditor.tsx`
-  (brush steps and row wrapping in `apps/web/src/lib/paint.ts`). Moving an event trims
+  (row wrapping in `apps/web/src/lib/paint.ts`). Moving an event trims
   availability to the new window in the same transaction (deferred DB check at commit).
 - **Phase 4 (overview and launch): in progress.** Overview in
   `apps/web/src/pages/AvailabilityOverview.tsx`; axis marks (midnight, clock changes) in

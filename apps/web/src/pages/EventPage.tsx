@@ -74,7 +74,14 @@ export function EventPage({ eventId, me }: { eventId: string; me: Me }) {
           </p>
           <h2 className="text-2xl font-semibold">{e.name}</h2>
           <p className="text-sm text-text-muted">
-            {[e.track, e.carClass, formatDuration(e.durationMinutes)].filter(Boolean).join(' · ')}
+            {[
+              e.track,
+              e.carClass,
+              formatDuration(e.durationMinutes),
+              e.minDrivers && `${e.minDrivers} drivers needed at once`,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
           </p>
         </div>
         {canEdit && (

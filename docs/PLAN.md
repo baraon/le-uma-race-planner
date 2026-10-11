@@ -48,7 +48,7 @@ production Dockerfiles and Caddy, sample timeline with timezone switcher on the 
 - Every endpoint authorizes against `group_members`.
 - **Done when:** a manager creates an event and each driver sees it in their own local time.
 
-### Phase 3 — Availability editor (built; awaiting owner check)
+### Phase 3 — Availability editor ✅
 
 - Paint slots by click-and-drag (mouse and touch), keyboard support (arrows move, space paints).
 - "Available for whole race" and "Clear" shortcuts; explicit Save; unsaved changes flagged.
@@ -57,14 +57,25 @@ production Dockerfiles and Caddy, sample timeline with timezone switcher on the 
 - Decided: when an event moves or changes length, saved availability keeps its real-world times,
   trimmed to the new window and shrunk to whole slots of the new grid (`clipToWindow`).
 - Only drivers on the event's team have a row; every group member can read all rows.
+- Long races: the editor paints in 15 min / 30 min / 1 h brush steps (defaults 30 min from 12 h,
+  1 h from 24 h) and wraps onto 6-hour rows. Storage stays 15-minute slots.
 - **Done when:** drivers in different timezones paint the same slots and see identical results.
 
-### Phase 4 — Overview and launch
+### Phase 4 — Overview and launch (in progress)
+
+- Built: overview with driver rows, coverage row against an optional per-event "drivers needed
+  at once" (`events.min_drivers`), written gap list, zone switcher (you, UTC, track, any
+  teammate), hover/tap details, "now" marker, date marks at local midnight, clock-change badges,
+  6-hour rows for long races.
+- Next: accessibility pass, then the production deploy.
 
 - Overview: driver rows, coverage row, timezone switcher, hover details (time for you and for
   that driver), "now" marker during the race, day labels at local midnight, DST hours labelled.
 - Accessibility pass (status colors paired with patterns/icons, keyboard, contrast).
-- Production deploy on a small VPS with `compose.prod.yaml`, HTTPS via Caddy, nightly backups.
+- Production deploy with `compose.prod.yaml` on the owner's NVIDIA DGX Spark (ARM64 Linux),
+  HTTPS via Caddy, nightly backups with a tested restore. Needs a public route to the box
+  (e.g. Cloudflare Tunnel, Tailscale Funnel or a router port forward) and a domain; if behind a
+  tunnel, make the API trust its forwarded client IP so rate limits work per visitor.
 - **Done when:** live on the production domain with HTTPS and nightly backups.
 
 ## Required timezone test cases (keep these passing)

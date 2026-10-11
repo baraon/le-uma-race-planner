@@ -24,9 +24,8 @@ import {
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Fragment, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import { slotClass, statusClass, statusLabel } from '../components/status';
-import { describeSlots, SlotStrip, StatusLegend, TimeAxis } from '../components/Timeline';
+import { describeSlots, TimeAxis } from '../components/Timeline';
 import { button, Card, ErrorText, Muted } from '../components/ui';
-import { Avatar } from '../UserMenu';
 import * as api from '../lib/api';
 import {
   BRUSH_STEPS,
@@ -39,6 +38,7 @@ import {
 import { keys, useAvailability, useGroupMutation } from '../lib/queries';
 import { confirmDiscard, useNavigationGuard } from '../lib/router';
 import { viewerTimeZone } from '../lib/session';
+import { AvailabilityOverview } from './AvailabilityOverview';
 
 type Brush = AvailabilityStatus | null;
 
@@ -138,46 +138,14 @@ export function AvailabilitySection({
         )}
       </Card>
 
-      <Card title={`${event.teamName} drivers`}>
-        {drivers.length === 0 ? (
-          <Muted>Nobody is on this team yet.</Muted>
-        ) : (
-          <div className="overflow-x-auto">
-            <div className="grid min-w-[640px] grid-cols-[140px_1fr] items-center gap-x-3 gap-y-2">
-              <div />
-              <TimeAxis window={w} zone={zone} />
-              {drivers.map((d) => (
-                <DriverRow key={d.id} driver={d} paint={paintOf(d.id)} w={w} zone={zone} />
-              ))}
-            </div>
-            <div className="mt-4">
-              <StatusLegend />
-            </div>
-          </div>
-        )}
-      </Card>
-    </>
-  );
-}
-
-function DriverRow({
-  driver,
-  paint,
-  w,
-  zone,
-}: {
-  driver: UserSummary;
-  paint: Paint;
-  w: EventWindow;
-  zone: string;
-}) {
-  return (
-    <>
-      <div className="flex min-w-0 items-center gap-2">
-        <Avatar me={driver} size={22} />
-        <span className="truncate text-sm">{nameOf(driver)}</span>
-      </div>
-      <SlotStrip window={w} paint={paint} zone={zone} name={nameOf(driver)} />
+      <AvailabilityOverview
+        event={event}
+        window={w}
+        drivers={drivers}
+        paintOf={paintOf}
+        viewerZone={zone}
+        meId={me.id}
+      />
     </>
   );
 }

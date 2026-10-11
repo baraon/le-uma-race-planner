@@ -362,6 +362,7 @@ describe.skipIf(!DATABASE_URL)('groups, teams and events', () => {
       track: 'Spa-Francorchamps',
       carClass: '',
       trackTimezone: 'Europe/Brussels',
+      minDrivers: 2,
     };
 
     expect((await call(driver, 'POST', `/api/teams/${team.id}/events`, input)).statusCode).toBe(
@@ -377,6 +378,7 @@ describe.skipIf(!DATABASE_URL)('groups, teams and events', () => {
       startsAt: startsAt.toISOString(),
       carClass: null,
       trackTimezone: 'Europe/Brussels',
+      minDrivers: 2,
     });
 
     const upcoming = await call(driver, 'GET', '/api/events/upcoming');
@@ -393,6 +395,8 @@ describe.skipIf(!DATABASE_URL)('groups, teams and events', () => {
       { ...input, startsAt: '2026-11-14T18:00:00-05:00' }, // offsets: send UTC
       { ...input, durationMinutes: 10 },
       { ...input, trackTimezone: 'UTC+1' },
+      { ...input, minDrivers: 0 },
+      { ...input, minDrivers: 1.5 },
       { ...input, teamId: team.id },
     ]) {
       expect((await call(planner, 'POST', `/api/teams/${team.id}/events`, bad)).statusCode).toBe(

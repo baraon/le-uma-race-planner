@@ -9,6 +9,7 @@ import {
   pgEnum,
   pgTable,
   primaryKey,
+  smallint,
   text,
   timestamp,
   uuid,
@@ -126,6 +127,8 @@ export const events = pgTable('events', {
   durationMinutes: integer('duration_minutes').notNull(),
   slotMinutes: integer('slot_minutes').notNull().default(15),
   trackTimezone: text('track_timezone'),
+  /** Drivers needed available at once; null = at least one. */
+  minDrivers: smallint('min_drivers'),
   createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
   createdAt: instant('created_at').notNull().defaultNow(),
 });

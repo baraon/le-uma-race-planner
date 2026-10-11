@@ -151,6 +151,14 @@ export const eventInputSchema = z
     track: optionalText(80),
     carClass: optionalText(40),
     trackTimezone: timeZoneSchema.nullish().transform((v) => v ?? null),
+    /** Drivers needed available at once; null = at least one. */
+    minDrivers: z
+      .number()
+      .int()
+      .min(1)
+      .max(20)
+      .nullish()
+      .transform((v) => v ?? null),
   })
   .strict();
 
@@ -166,6 +174,7 @@ export const eventSchema = z.object({
   track: z.string().nullable(),
   carClass: z.string().nullable(),
   trackTimezone: z.string().nullable(),
+  minDrivers: z.number().int().nullable(),
 });
 
 /** One driver's saved availability for an event, as slot blocks counted from the green flag. */

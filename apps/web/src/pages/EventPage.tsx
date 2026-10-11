@@ -6,11 +6,9 @@ import {
   zoneAbbreviation,
   type Me,
   type RaceEvent,
-  type UserSummary,
 } from '@lmu/shared';
 import { useMutation } from '@tanstack/react-query';
-import { AppLink, button, Card, ErrorText, Muted } from '../components/ui';
-import { Avatar } from '../UserMenu';
+import { AppLink, button, ErrorText, Muted } from '../components/ui';
 import { deleteEvent } from '../lib/api';
 import { formatDuration, formatRelative } from '../lib/format';
 import { useEvent, useGroup, useInvalidateEvents } from '../lib/queries';
@@ -33,15 +31,6 @@ function formatSpanEnd(start: Date, end: Date, zone: string, abbreviateStart = t
   return `${formatSlotLabel(end, zone, localDayChanged(start, end, zone))} ${endAbbr}${
     abbreviateStart && startAbbr !== endAbbr ? ` (starts ${startAbbr})` : ''
   }`;
-}
-
-function TimeCell({ at, zone }: { at: Date; zone: string }) {
-  return (
-    <>
-      {formatDateTime(at, zone)}{' '}
-      <span className="text-text-muted">{zoneAbbreviation(at, zone)}</span>
-    </>
-  );
 }
 
 export function EventPage({ eventId, me }: { eventId: string; me: Me }) {
@@ -69,11 +58,6 @@ export function EventPage({ eventId, me }: { eventId: string; me: Me }) {
       : []),
     ...(zone !== 'UTC' ? [{ label: 'UTC', zone: 'UTC' }] : []),
   ];
-
-  const team = group.data?.teams.find((t) => t.id === e.teamId);
-  const drivers: UserSummary[] = (team?.memberIds ?? [])
-    .map((id) => group.data?.members.find((m) => m.user.id === id)?.user)
-    .filter((u): u is UserSummary => u !== undefined);
 
   return (
     <>
@@ -142,43 +126,6 @@ export function EventPage({ eventId, me }: { eventId: string; me: Me }) {
       <ErrorText error={remove.error} />
 
       {group.data && <AvailabilitySection event={e} group={group.data} me={me} />}
-
-      <Card title="Race times for each driver">
-        {group.isPending ? (
-          <Muted>Loading…</Muted>
-        ) : drivers.length === 0 ? (
-          <Muted>
-            Nobody is on this team yet. Drivers join teams from the{' '}
-            <AppLink to={`/groups/${e.groupId}`} className={button.link}>
-              group page
-            </AppLink>
-            .
-          </Muted>
-        ) : (
-          <ul className="flex flex-col divide-y divide-border">
-            {drivers.map((u) => (
-              <li key={u.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
-                <span className="flex items-center gap-2">
-                  <Avatar me={u} size={24} />
-                  <span className="font-medium">{u.displayName ?? u.username}</span>
-                </span>
-                <span className="text-right text-sm">
-                  {u.timezone ? (
-                    <>
-                      <TimeCell at={start} zone={u.timezone} />
-                      <span className="block text-xs text-text-muted">
-                        until <TimeCell at={end} zone={u.timezone} />
-                      </span>
-                    </>
-                  ) : (
-                    <span className="text-text-muted">Timezone not set</span>
-                  )}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
     </>
   );
 }

@@ -86,7 +86,9 @@ export function AvailabilitySection({
   return (
     <>
       <Card
-        title="Your availability"
+        title={
+          target && target.id !== me.id ? `${nameOf(target)}’s availability` : 'Your availability'
+        }
         action={
           editable.length > 1 && (
             <label className="flex items-center gap-2 text-sm text-text-muted">

@@ -23,13 +23,16 @@ Owner: Baraon (GitHub `baraon`), based in America/Chicago, develops on Windows.
 - **Phase 2 (groups, teams, events): done.** Routes in
   `apps/api/src/routes/{groups,invites,teams,events}.ts`; authorization helpers in
   `apps/api/src/auth/permissions.ts` (non-members get 404, members lacking a flag get 403).
-- **Phase 3 (availability editor): built**, awaiting the owner's check. API in
-  `apps/api/src/routes/availability.ts` + `apps/api/src/db/availability.ts`; editor in
-  `apps/web/src/pages/AvailabilityEditor.tsx`. Moving an event trims availability to the new
-  window in the same transaction (deferred DB check at commit).
-- **Phase 4 (overview and launch): next.**
+- **Phase 3 (availability editor): done.** API in `apps/api/src/routes/availability.ts` +
+  `apps/api/src/db/availability.ts`; editor in `apps/web/src/pages/AvailabilityEditor.tsx`
+  (brush steps and row wrapping in `apps/web/src/lib/paint.ts`). Moving an event trims
+  availability to the new window in the same transaction (deferred DB check at commit).
+- **Phase 4 (overview and launch): in progress.** Overview in
+  `apps/web/src/pages/AvailabilityOverview.tsx`; axis marks (midnight, clock changes) in
+  `packages/shared/src/timeline.ts`. Next: accessibility pass, then deploy.
 - A Discord application exists; its client ID/secret are in the owner's local `.env` only.
-- Production domain: **not decided.** Hosting: cheapest option, one small VPS with Docker Compose.
+- Production domain: **not decided.** Hosting: the owner's NVIDIA DGX Spark (ARM64 Linux) with
+  Docker Compose; how it's exposed publicly (tunnel or port forward) is not decided.
 
 ## Non-negotiable rules
 
@@ -129,4 +132,5 @@ Run `pnpm format` before committing; CI fails on Prettier differences.
 ## Open items
 
 - Production domain (needed before first deploy; also add its redirect URI in Discord).
+- How the DGX Spark is reached from the internet (tunnel vs port forward).
 - Decide whether Dependabot should be limited to minor/patch updates if PR volume is annoying.

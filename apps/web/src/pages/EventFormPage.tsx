@@ -70,6 +70,7 @@ function EventForm({ group, me, event }: { group: GroupDetail; me: Me; event?: R
   const [track, setTrack] = useState(event?.track ?? '');
   const [carClass, setCarClass] = useState(event?.carClass ?? '');
   const [trackZone, setTrackZone] = useState<string | null>(event?.trackTimezone ?? null);
+  const [minDrivers, setMinDrivers] = useState<number | null>(event?.minDrivers ?? null);
   const invalidate = useInvalidateEvents();
 
   const durationMinutes = hours * 60 + minutes;
@@ -94,6 +95,7 @@ function EventForm({ group, me, event }: { group: GroupDetail; me: Me; event?: R
         track,
         carClass,
         trackTimezone: trackZone,
+        minDrivers,
       };
       return event ? updateEvent(event.id, input) : createEvent(teamId, input);
     },
@@ -276,6 +278,25 @@ function EventForm({ group, me, event }: { group: GroupDetail; me: Me; event?: R
             <TimeZoneSelect value={trackZone} onChange={setTrackZone} allowNone="None" />
           </label>
         </div>
+
+        <label className={`${label} max-w-xs`}>
+          <span className="font-medium">Drivers needed at once</span>
+          <select
+            value={minDrivers ?? ''}
+            onChange={(e) => setMinDrivers(e.target.value ? Number(e.target.value) : null)}
+            className={input}
+          >
+            <option value="">At least one (default)</option>
+            {[2, 3, 4, 5, 6].map((n) => (
+              <option key={n} value={n}>
+                {n} drivers
+              </option>
+            ))}
+          </select>
+          <span className="text-xs text-text-muted">
+            The overview flags any time with fewer drivers available than this.
+          </span>
+        </label>
 
         <div className="flex flex-wrap items-center gap-3">
           <button type="submit" disabled={!valid || save.isPending} className={button.primary}>

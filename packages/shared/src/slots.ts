@@ -154,3 +154,27 @@ export function clipToWindow<T extends Interval>(intervals: readonly T[], w: Eve
       : [];
   });
 }
+
+export interface CoverageGap {
+  startSlot: number;
+  /** Exclusive. */
+  endSlot: number;
+  /** The fewest available drivers in any slot of the gap. */
+  fewest: number;
+}
+
+/** Runs of consecutive slots where fewer than `needed` drivers are available. */
+export function coverageGaps(counts: readonly number[], needed: number): CoverageGap[] {
+  const gaps: CoverageGap[] = [];
+  counts.forEach((n, i) => {
+    const last = gaps.at(-1);
+    if (n >= needed) return;
+    if (last && last.endSlot === i) {
+      last.endSlot = i + 1;
+      last.fewest = Math.min(last.fewest, n);
+    } else {
+      gaps.push({ startSlot: i, endSlot: i + 1, fewest: n });
+    }
+  });
+  return gaps;
+}

@@ -11,6 +11,7 @@ import {
 } from '@lmu/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { confirmDialog, promptDialog } from '../components/Dialog';
 import { AppLink, button, Card, ErrorText, input, Muted, RoleBadge } from '../components/ui';
 import { Avatar } from '../UserMenu';
 import * as api from '../lib/api';
@@ -198,8 +199,14 @@ function TeamRow({
               <button
                 type="button"
                 className={button.link}
-                onClick={() => {
-                  const n = window.prompt('Rename team', team.name)?.trim();
+                onClick={async () => {
+                  const n = await promptDialog({
+                    title: 'Rename team',
+                    label: 'Team name',
+                    initial: team.name,
+                    maxLength: 80,
+                    confirmLabel: 'Rename',
+                  });
                   if (n && n !== team.name) rename.mutate(n);
                 }}
               >
@@ -208,11 +215,14 @@ function TeamRow({
               <button
                 type="button"
                 className={button.link}
-                onClick={() => {
+                onClick={async () => {
                   if (
-                    window.confirm(
-                      `Delete team “${team.name}”? Its events and everyone’s availability for them are deleted too.`,
-                    )
+                    await confirmDialog({
+                      title: `Delete team “${team.name}”?`,
+                      message: 'Its events and everyone’s availability for them are deleted too.',
+                      confirmLabel: 'Delete team',
+                      danger: true,
+                    })
                   ) {
                     remove.mutate(undefined, {
                       onSuccess: () =>
@@ -311,9 +321,15 @@ function MemberRow({
             type="button"
             className={button.link}
             disabled={remove.isPending}
-            onClick={() => {
+            onClick={async () => {
               const who = member.user.displayName ?? member.user.username;
-              if (window.confirm(`Remove ${who} from ${group.name}?`)) remove.mutate(undefined);
+              const ok = await confirmDialog({
+                title: `Remove ${who}?`,
+                message: `${who} leaves ${group.name} and its teams. They can come back with a new invite link.`,
+                confirmLabel: 'Remove',
+                danger: true,
+              });
+              if (ok) remove.mutate(undefined);
             }}
           >
             Remove
@@ -508,11 +524,23 @@ function LeaveOrDelete({ group }: { group: GroupDetail }) {
         type="button"
         className={button.danger}
         disabled={action.isPending}
-        onClick={() => {
-          const question = isOwner
-            ? `Delete “${group.name}” for everyone? All its teams, events and availability are deleted.`
-            : `Leave “${group.name}”? You’ll need a new invite link to come back.`;
-          if (window.confirm(question)) action.mutate();
+        onClick={async () => {
+          const ok = await confirmDialog(
+            isOwner
+              ? {
+                  title: `Delete “${group.name}”?`,
+                  message: 'This deletes it for everyone: all its teams, events and availability.',
+                  confirmLabel: 'Delete group',
+                  danger: true,
+                }
+              : {
+                  title: `Leave “${group.name}”?`,
+                  message: 'You’ll need a new invite link to come back.',
+                  confirmLabel: 'Leave group',
+                  danger: true,
+                },
+          );
+          if (ok) action.mutate();
         }}
       >
         {isOwner ? 'Delete group' : 'Leave group'}

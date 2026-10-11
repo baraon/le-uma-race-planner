@@ -21,6 +21,8 @@
   --color-accent-strong: #ff5ca8;
   /* The livery's soft pink panels. */
   --color-blush: #f5b8cb;
+  /* Destructive buttons: a deep red so white text on it passes WCAG AA (6.2:1). */
+  --color-danger: #b8262e;
   /* Discord's darker blurple: white text on it passes WCAG AA. */
   --color-discord: #4752c4;
 

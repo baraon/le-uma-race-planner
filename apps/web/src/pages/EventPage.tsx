@@ -8,6 +8,7 @@ import {
   type RaceEvent,
 } from '@lmu/shared';
 import { useMutation } from '@tanstack/react-query';
+import { confirmDialog } from '../components/Dialog';
 import { AppLink, button, ErrorText, Muted } from '../components/ui';
 import { deleteEvent } from '../lib/api';
 import { formatDuration, formatRelative } from '../lib/format';
@@ -110,12 +111,14 @@ export function EventPage({ eventId, me }: { eventId: string; me: Me }) {
               type="button"
               className={button.danger}
               disabled={remove.isPending}
-              onClick={() => {
-                if (
-                  window.confirm(`Delete “${e.name}”? Drivers’ availability for it is deleted too.`)
-                ) {
-                  remove.mutate();
-                }
+              onClick={async () => {
+                const ok = await confirmDialog({
+                  title: `Delete “${e.name}”?`,
+                  message: 'Drivers’ availability for it is deleted too.',
+                  confirmLabel: 'Delete event',
+                  danger: true,
+                });
+                if (ok) remove.mutate();
               }}
             >
               Delete

@@ -1,7 +1,6 @@
 import type { Me } from '@lmu/shared';
-import { useQuery } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
-import { getHealth } from './lib/api';
+import { DialogHost } from './components/Dialog';
 import { linkClick, matchRoute, usePath } from './lib/router';
 import { useAdoptBrowserTimeZone, useMe } from './lib/session';
 import { EditEventPage, NewEventPage } from './pages/EventFormPage';
@@ -33,16 +32,9 @@ function renderRoute(path: string, me: Me): ReactNode {
 }
 
 export function App() {
-  const health = useQuery({ queryKey: ['health'], queryFn: getHealth });
   const me = useMe();
   const path = usePath();
   useAdoptBrowserTimeZone(me.data);
-
-  const status = health.isPending
-    ? { label: 'Checking API…', tone: 'bg-text-muted' }
-    : health.data?.db === 'ok'
-      ? { label: 'API and database online', tone: 'bg-available' }
-      : { label: 'API or database unreachable', tone: 'bg-unavailable' };
 
   let page;
   if (me.isPending) {
@@ -69,13 +61,7 @@ export function App() {
 
       <main className="flex flex-col gap-8">{page}</main>
 
-      <footer className="mt-auto flex flex-wrap items-center gap-3 text-xs text-text-muted">
-        <span className="inline-flex items-center gap-2">
-          <span className={`size-2 rounded-full ${status.tone}`} aria-hidden />
-          {status.label}
-        </span>
-        <span>Phase 2 · development build {health.data ? `· API ${health.data.version}` : ''}</span>
-      </footer>
+      <DialogHost />
     </div>
   );
 }

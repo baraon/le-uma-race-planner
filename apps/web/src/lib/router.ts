@@ -3,10 +3,11 @@
  * through the History API. Caddy (and Vite in dev) serve index.html for any path.
  */
 import { useEffect, useSyncExternalStore, type MouseEvent } from 'react';
+import { confirmDialog } from '../components/Dialog';
 
 const listeners = new Set<() => void>();
-/** Set while a page has unsaved changes; returns false to cancel navigation. */
-let guard: (() => boolean) | null = null;
+/** Set while a page has unsaved changes; resolves false to cancel navigation. */
+let guard: (() => Promise<boolean>) | null = null;
 
 function subscribe(listener: () => void) {
   listeners.add(listener);
@@ -21,16 +22,19 @@ export function usePath(): string {
   return useSyncExternalStore(subscribe, () => window.location.pathname);
 }
 
-/** True if it's fine to throw away the current page's state (asks when there are unsaved changes). */
-export function confirmDiscard(): boolean {
+/** Resolves true if it's fine to throw away the current page's state (asks if unsaved). */
+export async function confirmDiscard(): Promise<boolean> {
   return !guard || guard();
 }
 
 export function navigate(to: string, { replace = false } = {}) {
-  if (!confirmDiscard()) return;
-  if (replace) window.history.replaceState(null, '', to);
-  else window.history.pushState(null, '', to);
-  listeners.forEach((l) => l());
+  const go = () => {
+    if (replace) window.history.replaceState(null, '', to);
+    else window.history.pushState(null, '', to);
+    listeners.forEach((l) => l());
+  };
+  if (!guard) go();
+  else void guard().then((ok) => ok && go());
 }
 
 /** onClick for <a href> links: navigate in-app on a plain left click, else let the browser. */
@@ -59,7 +63,13 @@ export function matchRoute(pattern: string, path: string): Record<string, string
 export function useNavigationGuard(active: boolean, message: string) {
   useEffect(() => {
     if (!active) return;
-    const confirmLeave = () => window.confirm(message);
+    const confirmLeave = () =>
+      confirmDialog({
+        title: 'Leave without saving?',
+        message,
+        confirmLabel: 'Leave',
+        danger: true,
+      });
     const onBeforeUnload = (e: BeforeUnloadEvent) => e.preventDefault();
     guard = confirmLeave;
     window.addEventListener('beforeunload', onBeforeUnload);

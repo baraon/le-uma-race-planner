@@ -57,8 +57,8 @@ production Dockerfiles and Caddy, sample timeline with timezone switcher on the 
 - Decided: when an event moves or changes length, saved availability keeps its real-world times,
   trimmed to the new window and shrunk to whole slots of the new grid (`clipToWindow`).
 - Only drivers on the event's team have a row; every group member can read all rows.
-- Long races: the editor paints in 15 min / 30 min / 1 h brush steps (defaults 30 min from 12 h,
-  1 h from 24 h) and wraps onto 6-hour rows. Storage stays 15-minute slots.
+- Long races: the editor and overview wrap onto 6-hour rows (races over 8 h). Painting is always
+  in 15-minute slots; coarser brush sizes were tried and dropped as unnecessary once rows wrapped.
 - **Done when:** drivers in different timezones paint the same slots and see identical results.
 
 ### Phase 4 — Overview and launch (in progress)

@@ -3,8 +3,8 @@
  * driver paints the same instants whatever their timezone; only the labels are local.
  *
  * Mouse and touch: press and drag across the strip. Keyboard: arrows move, Space paints, Shift
- * + arrows paints while moving, 1/2/3 pick a status and 0 the eraser. Long races paint in bigger
- * brush steps and wrap onto several rows; storage is always 15-minute slots.
+ * + arrows paints while moving, 1/2/3 pick a status and 0 the eraser. Long races wrap onto
+ * several 6-hour rows.
  */
 import {
   blocksToPaint,
@@ -27,14 +27,7 @@ import { slotClass, statusClass, statusLabel } from '../components/status';
 import { describeSlots, TimeAxis } from '../components/Timeline';
 import { button, Card, ErrorText, Muted } from '../components/ui';
 import * as api from '../lib/api';
-import {
-  BRUSH_STEPS,
-  chunkOf,
-  defaultStep,
-  paintChunks,
-  rowsFor,
-  type BrushStep,
-} from '../lib/paint';
+import { paintRange as paintSlots, rowsFor } from '../lib/paint';
 import { keys, useAvailability, useGroupMutation } from '../lib/queries';
 import { confirmDiscard, useNavigationGuard } from '../lib/router';
 import { viewerTimeZone } from '../lib/session';
@@ -174,7 +167,6 @@ function PaintEditor({
   const perRow = rows[0]!.end;
   const [draft, setDraft] = useState<Paint>(savedPaint);
   const [brush, setBrush] = useState<Brush>('available');
-  const [step, setStep] = useState<BrushStep>(defaultStep(count));
   const [cursor, setCursor] = useState(0);
   const [hover, setHover] = useState<number | null>(null);
   const [focused, setFocused] = useState(false);
@@ -195,9 +187,9 @@ function PaintEditor({
     },
   });
 
-  /** Paints the brush-sized chunks from slot a through slot b. */
-  const paintRange = (a: number, b: number, with_: Brush = brush, size: number = step) => {
-    setDraft((d) => paintChunks(d, a, b, size, with_));
+  /** Paints slots a through b (either order). */
+  const paintRange = (a: number, b: number, with_: Brush = brush) => {
+    setDraft((d) => paintSlots(d, a, b, with_));
     save.reset();
   };
 
@@ -238,17 +230,16 @@ function PaintEditor({
     drag.current = null;
   };
 
-  const [chunkFrom, chunkTo] = chunkOf(cursor, step, count);
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     const move = (to: number) => {
-      const next = chunkOf(Math.max(0, Math.min(count - 1, to)), step, count)[0];
+      const next = Math.max(0, Math.min(count - 1, to));
       if (e.shiftKey) paintRange(cursor, next);
       setCursor(next);
     };
     const picked = brushes.find((b) => b.key === e.key);
     if (picked) setBrush(picked.brush);
-    else if (e.key === 'ArrowRight') move(chunkTo);
-    else if (e.key === 'ArrowLeft') move(chunkFrom - 1);
+    else if (e.key === 'ArrowRight') move(cursor + 1);
+    else if (e.key === 'ArrowLeft') move(cursor - 1);
     else if (e.key === 'ArrowDown' && rows.length > 1) move(cursor + perRow);
     else if (e.key === 'ArrowUp' && rows.length > 1) move(cursor - perRow);
     else if (e.key === 'Home') move(0);
@@ -259,81 +250,48 @@ function PaintEditor({
     e.preventDefault();
   };
 
-  const [shownFrom, shownTo] = chunkOf(hover ?? cursor, step, count);
-  const shownStatus = draft[shownFrom] ?? null;
+  const shown = hover ?? cursor;
+  const shownStatus = draft[shown] ?? null;
   const theirZone =
     !isSelf && target.timezone && target.timezone !== viewerZone ? target.timezone : null;
-  const sizeLabel = (n: BrushStep) => (n === 4 ? '1 h' : `${n * 15} min`);
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-        <fieldset className="flex flex-wrap items-center gap-2">
-          <legend className="sr-only">Paint with</legend>
-          {brushes.map((b) => (
-            <label
-              key={b.key}
-              className={`flex cursor-pointer items-center gap-2 rounded-md border px-3 py-1.5 text-sm ${
-                brush === b.brush ? 'border-accent-strong bg-surface-raised' : 'border-border'
-              }`}
-            >
-              <input
-                type="radio"
-                name="brush"
-                className="sr-only"
-                checked={brush === b.brush}
-                onChange={() => setBrush(b.brush)}
-              />
-              <span
-                className={`size-4 rounded-sm ${b.brush ? statusClass[b.brush] : 'slot-empty border border-text-muted'}`}
-                aria-hidden
-              />
-              {b.label}
-              <kbd className="text-[10px] text-text-muted">{b.key}</kbd>
-            </label>
-          ))}
-        </fieldset>
-
-        <fieldset className="flex items-center gap-1 text-sm">
-          <legend className="sr-only">Brush size</legend>
-          <span className="mr-1 text-text-muted" aria-hidden>
-            Brush
-          </span>
-          {BRUSH_STEPS.map((n) => (
-            <label
-              key={n}
-              className={`cursor-pointer rounded-md border px-2.5 py-1.5 ${
-                step === n
-                  ? 'border-accent-strong bg-surface-raised'
-                  : 'border-border text-text-muted'
-              }`}
-            >
-              <input
-                type="radio"
-                name="brush-size"
-                className="sr-only"
-                checked={step === n}
-                onChange={() => {
-                  setStep(n);
-                  setCursor((c) => chunkOf(c, n, count)[0]);
-                }}
-              />
-              {sizeLabel(n)}
-            </label>
-          ))}
-        </fieldset>
-      </div>
+      <fieldset className="flex flex-wrap items-center gap-2">
+        <legend className="sr-only">Paint with</legend>
+        {brushes.map((b) => (
+          <label
+            key={b.key}
+            className={`flex cursor-pointer items-center gap-2 rounded-md border px-3 py-1.5 text-sm ${
+              brush === b.brush ? 'border-accent-strong bg-surface-raised' : 'border-border'
+            }`}
+          >
+            <input
+              type="radio"
+              name="brush"
+              className="sr-only"
+              checked={brush === b.brush}
+              onChange={() => setBrush(b.brush)}
+            />
+            <span
+              className={`size-4 rounded-sm ${b.brush ? statusClass[b.brush] : 'slot-empty border border-text-muted'}`}
+              aria-hidden
+            />
+            {b.label}
+          </label>
+        ))}
+      </fieldset>
 
       <div className="overflow-x-auto">
         <div
           ref={editor}
           role="slider"
           tabIndex={0}
-          aria-label={`Availability for ${isSelf ? 'you' : nameOf(target)}, in ${sizeLabel(step)} steps. Arrow keys move, Space paints, Shift and arrows paint while moving.`}
+          aria-label={`Availability for ${isSelf ? 'you' : nameOf(target)}. Arrow keys move, Space paints, Shift and arrows paint while moving; 1, 2, 3 pick Available, Maybe, Not available and 0 the eraser.`}
           aria-valuemin={1}
           aria-valuemax={count}
           aria-valuenow={cursor + 1}
-          aria-valuetext={`${describeSlots(w, chunkFrom, chunkTo, viewerZone)}: ${draft[cursor] ? statusLabel[draft[cursor]!] : 'no answer'}`}
+          aria-valuetext={`${describeSlots(w, cursor, cursor + 1, viewerZone)}: ${draft[cursor] ? statusLabel[draft[cursor]!] : 'no answer'}`}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={endDrag}
@@ -362,15 +320,13 @@ function PaintEditor({
                 >
                   {draft.slice(row.start, row.end).map((s, k) => {
                     const i = row.start + k;
-                    const inCursor = focused && i >= chunkFrom && i < chunkTo;
+                    const inCursor = focused && i === cursor;
                     return (
                       <div
                         key={i}
                         className={`min-w-0 flex-1 rounded-[2px] ${slotClass(s)} ${
-                          step > 1 && i % step === 0 && i !== row.start ? 'ml-[3px]' : ''
-                        } ${inCursor ? 'outline-2 outline-offset-1 outline-text' : ''} ${
-                          s !== savedPaint[i] ? 'opacity-80' : ''
-                        }`}
+                          inCursor ? 'outline-2 outline-offset-1 outline-text' : ''
+                        } ${s !== savedPaint[i] ? 'opacity-80' : ''}`}
                       />
                     );
                   })}
@@ -382,11 +338,11 @@ function PaintEditor({
       </div>
 
       <p className="min-h-5 text-sm" aria-hidden>
-        <span className="text-text-muted">{describeSlots(w, shownFrom, shownTo, viewerZone)}</span>
+        <span className="text-text-muted">{describeSlots(w, shown, shown + 1, viewerZone)}</span>
         {theirZone && (
           <span className="text-text-muted">
             {' '}
-            · {describeSlots(w, shownFrom, shownTo, theirZone)} for {nameOf(target)}
+            · {describeSlots(w, shown, shown + 1, theirZone)} for {nameOf(target)}
           </span>
         )}{' '}
         · {shownStatus ? statusLabel[shownStatus] : 'No answer'}
@@ -396,14 +352,14 @@ function PaintEditor({
         <button
           type="button"
           className={button.secondary}
-          onClick={() => paintRange(0, count - 1, 'available', 1)}
+          onClick={() => paintRange(0, count - 1, 'available')}
         >
           Available for whole race
         </button>
         <button
           type="button"
           className={button.secondary}
-          onClick={() => paintRange(0, count - 1, null, 1)}
+          onClick={() => paintRange(0, count - 1, null)}
         >
           Clear
         </button>

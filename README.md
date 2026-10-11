@@ -1,11 +1,11 @@
-# Le Mans Race Planner
+# Le Uma Race Planner
 
 Driver availability planning for **Le Mans Ultimate** endurance races. Each driver marks when they
 can race on a shared timeline, and everyone sees it in their own timezone.
 
-> Status: **Phase 0 — platform setup.** The stack, database, Docker setup and CI are in place. The
-> home page shows a sample availability timeline with a timezone switcher. Discord login is next
-> (Phase 1).
+> Status: **Phase 4 — overview and launch.** Discord login, groups with invite links, teams,
+> events, the availability editor and the team overview all work. Next: an accessibility pass and
+> the first production deploy. See [docs/PLAN.md](docs/PLAN.md).
 
 ## How timezones work
 

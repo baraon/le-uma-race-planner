@@ -133,3 +133,24 @@ export function coverage(rows: readonly Paint[], count: number): number[] {
     rows.reduce((n, row) => n + (row[i] === 'available' ? 1 : 0), 0),
   );
 }
+
+/**
+ * For when an event moves or changes length: keeps the parts of each interval that fall inside
+ * the new window, shrunk inward to whole slots of the new grid (a block may still end at the
+ * flag). Availability means "these real-world times", so the instants stay put; anything that
+ * no longer covers a whole slot is dropped.
+ */
+export function clipToWindow<T extends Interval>(intervals: readonly T[], w: EventWindow): T[] {
+  const step = slotLength(w) * MINUTE_MS;
+  const start = w.startsAt.getTime();
+  const end = eventEnd(w).getTime();
+  return intervals.flatMap((iv) => {
+    const a = Math.max(iv.start.getTime(), start);
+    const b = Math.min(iv.end.getTime(), end);
+    const snappedStart = start + Math.ceil((a - start) / step) * step;
+    const snappedEnd = b === end ? end : start + Math.floor((b - start) / step) * step;
+    return snappedStart < snappedEnd
+      ? [{ ...iv, start: new Date(snappedStart), end: new Date(snappedEnd) }]
+      : [];
+  });
+}

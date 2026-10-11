@@ -14,6 +14,7 @@ import { formatDuration, formatRelative } from '../lib/format';
 import { useEvent, useGroup, useInvalidateEvents } from '../lib/queries';
 import { navigate } from '../lib/router';
 import { viewerTimeZone } from '../lib/session';
+import { AvailabilitySection } from './AvailabilityEditor';
 
 function raceWindow(e: RaceEvent) {
   const start = new Date(e.startsAt);
@@ -132,7 +133,9 @@ export function EventPage({ eventId, me }: { eventId: string; me: Me }) {
         </table>
       </Card>
 
-      <Card title={`${e.teamName} drivers`}>
+      {group.data && <AvailabilitySection event={e} group={group.data} me={me} />}
+
+      <Card title="Race times for each driver">
         {group.isPending ? (
           <Muted>Loading…</Muted>
         ) : drivers.length === 0 ? (
@@ -167,9 +170,6 @@ export function EventPage({ eventId, me }: { eventId: string; me: Me }) {
             ))}
           </ul>
         )}
-        <p className="mt-4 text-xs text-text-muted">
-          Availability painting arrives in the next update.
-        </p>
       </Card>
     </>
   );

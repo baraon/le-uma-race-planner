@@ -11,7 +11,7 @@ import { eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { Db, Sql } from '../db/client';
-import { availability, groupInvites } from '../db/schema';
+import { groupInvites } from '../db/schema';
 import { DATABASE_URL, openTestDb, signedInUser, testApp, type TestUser } from '../test-utils';
 
 const none: Permissions = {
@@ -421,44 +421,6 @@ describe.skipIf(!DATABASE_URL)('groups, teams and events', () => {
 
     expect((await call(planner, 'DELETE', `/api/events/${event.id}`)).statusCode).toBe(204);
     expect((await call(driver, 'GET', `/api/events/${event.id}`)).statusCode).toBe(404);
-  });
-
-  it('refuses event edits that would strand saved availability', async () => {
-    const owner = await signedInUser(db, 'owner');
-    const group = await createGroup(owner);
-    const team = groupDetailSchema.parse(
-      (await call(owner, 'POST', `/api/groups/${group.id}/teams`, { name: 'T' })).json(),
-    ).teams[0]!;
-    const input = {
-      name: 'Sebring 12h',
-      startsAt: '2027-03-20T15:00:00.000Z',
-      durationMinutes: 720,
-    };
-    const event = eventSchema.parse(
-      (await call(owner, 'POST', `/api/teams/${team.id}/events`, input)).json(),
-    );
-    await db.insert(availability).values({
-      eventId: event.id,
-      userId: owner.id,
-      period: '[2027-03-21 01:00:00+00,2027-03-21 03:00:00+00)',
-      status: 'available',
-    });
-
-    const shorter = await call(owner, 'PUT', `/api/events/${event.id}`, {
-      ...input,
-      durationMinutes: 360,
-    });
-    expect(shorter.statusCode).toBe(409);
-    const offGrid = await call(owner, 'PUT', `/api/events/${event.id}`, {
-      ...input,
-      startsAt: '2027-03-20T15:05:00.000Z',
-    });
-    expect(offGrid.statusCode).toBe(409);
-    // Renaming is fine.
-    expect(
-      (await call(owner, 'PUT', `/api/events/${event.id}`, { ...input, name: 'Sebring' }))
-        .statusCode,
-    ).toBe(200);
   });
 
   it('lets only the owner delete a group', async () => {

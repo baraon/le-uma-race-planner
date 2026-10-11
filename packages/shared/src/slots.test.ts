@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  clipToWindow,
   blocksOverlap,
   blocksToPaint,
   coverage,
@@ -80,5 +81,52 @@ describe('painting', () => {
   it('counts available drivers per slot', () => {
     const other: Paint = ['available', null, 'available', 'available', null, null, null];
     expect(coverage([paint, other], 7)).toEqual([2, 1, 1, 1, 0, 0, 0]);
+  });
+});
+
+describe('moving an event', () => {
+  const at = (iso: string) => new Date(iso);
+  const block = (start: string, end: string) => ({
+    start: at(start),
+    end: at(end),
+    status: 'available' as const,
+  });
+
+  it('keeps the same real-world times when the race moves by whole slots', () => {
+    const moved: EventWindow = { startsAt: at('2026-11-14T17:00:00Z'), durationMinutes: 360 };
+    const kept = clipToWindow([block('2026-11-14T18:00:00Z', '2026-11-14T20:00:00Z')], moved);
+    expect(kept).toEqual([block('2026-11-14T18:00:00Z', '2026-11-14T20:00:00Z')]);
+  });
+
+  it('trims to the new window and drops what falls outside', () => {
+    const shorter: EventWindow = { startsAt: at('2026-11-14T18:00:00Z'), durationMinutes: 120 };
+    expect(
+      clipToWindow(
+        [
+          block('2026-11-14T19:00:00Z', '2026-11-14T22:00:00Z'),
+          block('2026-11-14T22:00:00Z', '2026-11-14T23:00:00Z'),
+        ],
+        shorter,
+      ),
+    ).toEqual([block('2026-11-14T19:00:00Z', '2026-11-14T20:00:00Z')]);
+  });
+
+  it('shrinks to whole slots when the start moves off the old grid', () => {
+    const offGrid: EventWindow = { startsAt: at('2026-11-14T18:05:00Z'), durationMinutes: 360 };
+    // 18:00-19:00 now covers only the slots 18:05-18:50; 18:50-19:00 is part of a slot.
+    expect(clipToWindow([block('2026-11-14T18:00:00Z', '2026-11-14T19:00:00Z')], offGrid)).toEqual([
+      block('2026-11-14T18:05:00Z', '2026-11-14T18:50:00Z'),
+    ]);
+    // Less than one whole slot left: dropped.
+    expect(clipToWindow([block('2026-11-14T18:00:00Z', '2026-11-14T18:15:00Z')], offGrid)).toEqual(
+      [],
+    );
+  });
+
+  it('can still end at a flag that is not on the slot grid', () => {
+    const partial: EventWindow = { startsAt: at('2026-11-14T18:00:00Z'), durationMinutes: 100 };
+    expect(clipToWindow([block('2026-11-14T19:00:00Z', '2026-11-14T21:00:00Z')], partial)).toEqual([
+      block('2026-11-14T19:00:00Z', '2026-11-14T19:40:00Z'),
+    ]);
   });
 });

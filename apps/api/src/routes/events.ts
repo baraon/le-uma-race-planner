@@ -10,7 +10,8 @@ import { can } from '../auth/permissions';
 import type { Db } from '../db/client';
 import { events, groupMembers, groups, teams } from '../db/schema';
 import { requireMembership } from './groups';
-import { conflict, forbidden, idParam, notFound, parseBody, pgCode } from './http';
+import { clipAvailabilityToEvent } from '../db/availability';
+import { forbidden, idParam, notFound, parseBody } from './http';
 
 const eventEnd = sql`${events.startsAt} + make_interval(mins => ${events.durationMinutes})`;
 
@@ -38,7 +39,7 @@ async function selectEvents(db: Db, where: SQL | undefined): Promise<RaceEvent[]
 }
 
 /** The event and the caller's membership in its group; 404 for non-members. */
-async function eventContext(db: Db, eventId: string, userId: string) {
+export async function eventContext(db: Db, eventId: string, userId: string) {
   const [event] = await selectEvents(db, eq(events.id, eventId));
   if (!event) throw notFound('Event not found');
   const membership = await requireMembership(db, event.groupId, userId).catch(() => {
@@ -91,22 +92,22 @@ export const eventRoutes: FastifyPluginAsync<{ db: Db }> = async (app, { db }) =
   // Full replacement of the editable fields. The team can't change here.
   app.put('/events/:eventId', async (req) => {
     const eventId = idParam(req.params, 'eventId');
-    const { membership } = await eventContext(db, eventId, req.user!.id);
+    const { event, membership } = await eventContext(db, eventId, req.user!.id);
     if (!can(membership, 'manageEvents')) throw forbidden();
 
     const input = parseBody(eventInputSchema, req.body);
-    await db
-      .update(events)
-      .set({ ...input, startsAt: new Date(input.startsAt) })
-      .where(eq(events.id, eventId))
-      .catch((err: unknown) => {
-        if (pgCode(err) === '23514') {
-          throw conflict(
-            'Drivers have availability outside the new times; ask them to clear it first',
-          );
-        }
-        throw err;
-      });
+    const window = { startsAt: new Date(input.startsAt), durationMinutes: input.durationMinutes };
+    const moved =
+      window.startsAt.getTime() !== new Date(event.startsAt).getTime() ||
+      window.durationMinutes !== event.durationMinutes;
+    await db.transaction(async (tx) => {
+      await tx
+        .update(events)
+        .set({ ...input, startsAt: window.startsAt })
+        .where(eq(events.id, eventId));
+      // Saved availability keeps its real-world times, trimmed to the new race window.
+      if (moved) await clipAvailabilityToEvent(tx, eventId, window);
+    });
     const [updated] = await selectEvents(db, eq(events.id, eventId));
     return updated;
   });

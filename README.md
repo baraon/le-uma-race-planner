@@ -136,3 +136,7 @@ certificate automatically. The production domain hasn't been chosen yet.
 This repository is public. Real secrets live only in `.env` (git-ignored) and in GitHub Actions
 secrets. Never commit `.env`. Please report security issues privately to the repository owner
 rather than opening a public issue.
+
+## License
+
+[MIT](LICENSE)

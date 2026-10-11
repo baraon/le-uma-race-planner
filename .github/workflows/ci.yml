@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Lint, typecheck, test
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: lmu
+          POSTGRES_PASSWORD: lmu
+          POSTGRES_DB: lmu
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U lmu -d lmu"
+          --health-interval 2s --health-timeout 3s --health-retries 20
+    env:
+      DATABASE_URL: postgres://lmu:lmu@localhost:5432/lmu
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          # Caching needs a lockfile; skipped until pnpm-lock.yaml is committed.
+          cache: ${{ hashFiles('pnpm-lock.yaml') != '' && 'pnpm' || '' }}
+
+      - name: Install
+        run: |
+          if [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile; else pnpm install; fi
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Format
+        run: pnpm format:check
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test (shared, under five timezones)
+        run: pnpm test:timezones
+
+      - name: Migrate a fresh database
+        run: pnpm db:migrate
+
+      - name: Migrations are idempotent
+        run: pnpm db:migrate
+
+      - name: Test (api, web)
+        run: pnpm --filter @lmu/api --filter @lmu/web test
+
+      - name: Build
+        run: pnpm build
+
+  docker:
+    name: Docker images
+    runs-on: ubuntu-latest
+    needs: check
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build API image
+        run: docker build -f docker/api.Dockerfile --build-arg APP_VERSION=${GITHUB_SHA::7} -t lmu-api .
+      - name: Build web image
+        run: docker build -f docker/web.Dockerfile -t lmu-web .

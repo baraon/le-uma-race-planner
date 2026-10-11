@@ -1,0 +1,32 @@
+{
+  "name": "lmu-race-planner",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Driver availability planning for Le Mans Ultimate endurance races, across timezones.",
+  "type": "module",
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "docker compose up",
+    "dev:down": "docker compose down",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "test:timezones": "node scripts/test-timezones.mjs",
+    "build": "pnpm -r build",
+    "db:migrate": "pnpm --filter @lmu/api db:migrate"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.25.0",
+    "eslint": "^9.25.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "globals": "^16.0.0",
+    "prettier": "^3.5.0",
+    "typescript": "^5.8.0",
+    "typescript-eslint": "^8.30.0"
+  }
+}

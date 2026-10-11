@@ -1,0 +1,83 @@
+# Development stack: `docker compose up`, then open http://localhost:5173
+# Source is mounted into the containers, so edits hot-reload.
+
+name: lmu-race-planner
+
+x-node: &node
+  image: node:22-alpine
+  working_dir: /app
+  environment: &node-env
+    COREPACK_ENABLE_DOWNLOAD_PROMPT: '0'
+    npm_config_store_dir: /pnpm-store
+  volumes:
+    - .:/app
+    # Linux node_modules live in volumes so they never clash with ones on your machine.
+    - node_modules:/app/node_modules
+    - api_node_modules:/app/apps/api/node_modules
+    - web_node_modules:/app/apps/web/node_modules
+    - shared_node_modules:/app/packages/shared/node_modules
+    - pnpm_store:/pnpm-store
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-lmu}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-lmu-dev-password}
+      POSTGRES_DB: ${POSTGRES_DB:-lmu}
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 2s
+      timeout: 3s
+      retries: 20
+
+  # Installs dependencies once, then exits. api and web wait for it.
+  deps:
+    <<: *node
+    command: sh -c "corepack enable && pnpm install"
+
+  api:
+    <<: *node
+    command: sh -c "corepack enable && pnpm --filter @lmu/api dev"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      <<: *node-env
+      NODE_ENV: development
+      DATABASE_URL: postgres://${POSTGRES_USER:-lmu}:${POSTGRES_PASSWORD:-lmu-dev-password}@db:5432/${POSTGRES_DB:-lmu}
+      SESSION_SECRET: ${SESSION_SECRET:-dev-only-session-secret-change-me-0000000000}
+      APP_URL: ${APP_URL:-http://localhost:5173}
+      RUN_MIGRATIONS: 'true'
+    ports:
+      - '3000:3000'
+    depends_on:
+      db:
+        condition: service_healthy
+      deps:
+        condition: service_completed_successfully
+
+  web:
+    <<: *node
+    command: sh -c "corepack enable && pnpm --filter @lmu/web dev --host 0.0.0.0"
+    environment:
+      <<: *node-env
+      API_PROXY_TARGET: http://api:3000
+      VITE_POLL: ${VITE_POLL:-false}
+    ports:
+      - '5173:5173'
+    depends_on:
+      deps:
+        condition: service_completed_successfully
+
+volumes:
+  pgdata:
+  node_modules:
+  api_node_modules:
+  web_node_modules:
+  shared_node_modules:
+  pnpm_store:

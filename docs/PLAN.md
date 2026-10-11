@@ -1,4 +1,4 @@
-# Le Mans Race Planner — Plan
+# Le Uma Race Planner — Plan
 
 Agreed scope and phases. Each phase ends in something a teammate can actually use, and ships as
 one or more PRs merged when CI is green.

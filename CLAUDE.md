@@ -5,7 +5,7 @@ plan and what "done" means for each phase. Keep both files up to date when decis
 
 ## What this is
 
-**Le Mans Race Planner** (repo `baraon/lmu-race-planner`, public, MIT): a team planning tool for
+**Le Uma Race Planner** (repo `baraon/lmu-race-planner`, public, MIT): a team planning tool for
 endurance races in the sim racing game **Le Mans Ultimate**. Inspired by iRacePlan's "Driver
 Availabilities" page. v1 does one thing well: drivers mark when they can race on a shared timeline
 for an event, and everyone sees it correctly in their own timezone.

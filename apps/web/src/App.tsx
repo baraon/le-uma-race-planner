@@ -60,7 +60,7 @@ export function App() {
           <div>
             <h1 className="text-2xl font-black italic tracking-tight uppercase">
               <a href="/" onClick={linkClick}>
-                Le Mans <span className="text-accent-strong">Race</span> Planner
+                Le <span className="text-accent-strong">Uma</span> Race Planner
               </a>
             </h1>
             <p className="text-sm text-text-muted">

@@ -21,7 +21,7 @@
     "db:migrate": "pnpm --filter @lmu/api db:migrate"
   },
   "devDependencies": {
-    "@eslint/js": "^9.25.0",
+    "@eslint/js": "^10.0.1",
     "eslint": "^9.25.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "globals": "^16.0.0",

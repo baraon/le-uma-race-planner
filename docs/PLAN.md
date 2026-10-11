@@ -24,7 +24,7 @@ recruitment, surveys, mobile apps, Discord bot or notifications.
 Monorepo, Docker Compose dev stack, Postgres with migrations, lint/format/typecheck/tests, CI,
 production Dockerfiles and Caddy, sample timeline with timezone switcher on the home page.
 
-### Phase 1 — Discord login (next)
+### Phase 1 — Discord login (built; awaiting sign-in check)
 
 - `GET /auth/discord`: random `state` in a short-lived signed cookie; redirect to Discord authorize
   URL with `scope=identify` and `response_type=code`.

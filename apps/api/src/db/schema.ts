@@ -32,7 +32,8 @@ export const users = pgTable('users', {
   username: text('username').notNull(),
   displayName: text('display_name'),
   avatarHash: text('avatar_hash'),
-  timezone: text('timezone').notNull().default('UTC'),
+  /** IANA name; null until the user (or their browser, on first login) picks one. */
+  timezone: text('timezone'),
   createdAt: instant('created_at').notNull().defaultNow(),
   updatedAt: instant('updated_at').notNull().defaultNow(),
 });

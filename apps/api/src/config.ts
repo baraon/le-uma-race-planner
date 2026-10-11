@@ -14,7 +14,7 @@ const schema = z.object({
   APP_URL: z.string().url().default('http://localhost:5173'),
   SESSION_SECRET: z.string().min(32, 'SESSION_SECRET must be at least 32 characters'),
   RUN_MIGRATIONS: bool,
-  // Discord login arrives in Phase 1; optional until then.
+  // Login is disabled without these. The redirect URI defaults to APP_URL/auth/discord/callback.
   DISCORD_CLIENT_ID: z.string().optional(),
   DISCORD_CLIENT_SECRET: z.string().optional(),
   DISCORD_REDIRECT_URI: z.string().url().optional(),

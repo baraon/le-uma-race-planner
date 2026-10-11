@@ -55,19 +55,22 @@ export function App() {
 
   return (
     <div className="mx-auto flex min-h-screen max-w-5xl flex-col gap-8 px-4 py-10 sm:px-8">
-      <header className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold italic tracking-tight">
-            <a href="/" onClick={linkClick}>
-              Le Mans Race Planner
-            </a>
-          </h1>
-          <p className="text-sm text-text-muted">
-            Driver availability for Le Mans Ultimate endurance races, in every driver&apos;s
-            timezone.
-          </p>
+      <header className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-black italic tracking-tight uppercase">
+              <a href="/" onClick={linkClick}>
+                Le Mans <span className="text-accent-strong">Race</span> Planner
+              </a>
+            </h1>
+            <p className="text-sm text-text-muted">
+              Driver availability for Le Mans Ultimate endurance races, in every driver&apos;s
+              timezone.
+            </p>
+          </div>
+          {me.data && <UserMenu me={me.data} />}
         </div>
-        {me.data && <UserMenu me={me.data} />}
+        <div className="livery-stripe h-1.5 -skew-x-[20deg] rounded-sm" aria-hidden />
       </header>
 
       <main className="flex flex-col gap-8">{page}</main>

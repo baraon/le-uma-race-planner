@@ -1,27 +1,33 @@
 @import 'tailwindcss';
 
 /*
- * Design tokens. Dark theme first; components use these names, never raw colors.
- * Status colors are paired with icons/patterns in the UI so they work with color blindness.
+ * Design tokens, taken from the team's #397 livery: hot magenta, blush pink and white over the
+ * dark garage, with black graphic shards. Dark theme first; components use these names, never
+ * raw colors. Availability colors are separate and stay green / amber / red, always paired with
+ * a pattern so they work with color blindness.
  */
 @theme {
   --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
 
-  --color-bg: #0f1115;
-  --color-surface: #16181d;
-  --color-surface-raised: #1c1f26;
-  --color-border: #2a2e37;
-  --color-text: #e6e8ec;
-  --color-text-muted: #9aa0ab;
-  --color-accent: #2f7cf6;
-  --color-accent-strong: #5b9bff;
+  --color-bg: #0e0a0d;
+  --color-surface: #171116;
+  --color-surface-raised: #21181f;
+  --color-border: #3b2a35;
+  --color-text: #f7eef3;
+  --color-text-muted: #b9a6b2;
+  /* Livery magenta, deepened so white text on it passes WCAG AA (5.2:1). */
+  --color-accent: #d0186f;
+  /* Brighter magenta for links, focus rings and highlights on dark surfaces (6.5:1). */
+  --color-accent-strong: #ff5ca8;
+  /* The livery's soft pink panels. */
+  --color-blush: #f5b8cb;
   /* Discord's darker blurple: white text on it passes WCAG AA. */
   --color-discord: #4752c4;
 
   --color-available: #22a45d;
   --color-maybe: #e0a020;
   --color-unavailable: #e5484d;
-  --color-empty: #2a2e37;
+  --color-empty: #3a2c35;
 }
 
 html,
@@ -31,7 +37,11 @@ body,
 }
 
 body {
-  background: var(--color-bg);
+  /* A faint magenta glow from above, like the garage lights on the car. */
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgb(208 24 111 / 0.18), transparent 70%),
+    var(--color-bg);
+  background-attachment: fixed;
   color: var(--color-text);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
@@ -56,4 +66,15 @@ body {
 }
 .slot-empty {
   background-color: var(--color-empty);
+}
+
+/* The livery's swoosh: magenta, blush and a white flash, cut on a diagonal. */
+.livery-stripe {
+  background: linear-gradient(
+    100deg,
+    var(--color-accent) 0 46%,
+    var(--color-blush) 46% 68%,
+    #fff 68% 72%,
+    var(--color-accent) 72% 100%
+  );
 }

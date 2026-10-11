@@ -271,7 +271,7 @@ function PaintEditor({
             <label
               key={b.key}
               className={`flex cursor-pointer items-center gap-2 rounded-md border px-3 py-1.5 text-sm ${
-                brush === b.brush ? 'border-text bg-surface-raised' : 'border-border'
+                brush === b.brush ? 'border-accent-strong bg-surface-raised' : 'border-border'
               }`}
             >
               <input
@@ -300,7 +300,9 @@ function PaintEditor({
             <label
               key={n}
               className={`cursor-pointer rounded-md border px-2.5 py-1.5 ${
-                step === n ? 'border-text bg-surface-raised' : 'border-border text-text-muted'
+                step === n
+                  ? 'border-accent-strong bg-surface-raised'
+                  : 'border-border text-text-muted'
               }`}
             >
               <input

@@ -28,7 +28,10 @@ export function Card({
     <section className="rounded-xl border border-border bg-surface">
       {title && (
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-3.5">
-          <h2 className="text-base font-semibold">{title}</h2>
+          <h2 className="flex items-center gap-2.5 text-base font-semibold">
+            <span className="h-4 w-1.5 -skew-x-[20deg] bg-accent" aria-hidden />
+            {title}
+          </h2>
           {action}
         </div>
       )}
@@ -72,7 +75,11 @@ export function Muted({ children }: { children: ReactNode }) {
 export function RoleBadge({ role }: { role: 'owner' | 'admin' | 'member' }) {
   if (role === 'member') return null;
   return (
-    <span className="rounded-full border border-border px-2 py-0.5 text-[11px] uppercase tracking-wide text-text-muted">
+    <span
+      className={`rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${
+        role === 'owner' ? 'bg-blush text-bg' : 'border border-accent-strong/60 text-accent-strong'
+      }`}
+    >
       {role === 'owner' ? '★ Owner' : 'Admin'}
     </span>
   );

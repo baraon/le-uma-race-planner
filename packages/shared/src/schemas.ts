@@ -168,6 +168,15 @@ export const eventSchema = z.object({
   trackTimezone: z.string().nullable(),
 });
 
+/** One driver's saved availability for an event, as slot blocks counted from the green flag. */
+export const availabilityRowSchema = z.object({
+  userId: uuid,
+  blocks: z.array(slotBlockSchema),
+  updatedAt: z.string().datetime().nullable(),
+  /** Who saved it last (an admin may edit someone else's row). */
+  updatedBy: uuid.nullable(),
+});
+
 export type SaveAvailability = z.infer<typeof saveAvailabilitySchema>;
 export type HealthResponse = z.infer<typeof healthResponseSchema>;
 export type Me = z.infer<typeof meSchema>;
@@ -185,3 +194,4 @@ export type CreatedInvite = z.infer<typeof createdInviteSchema>;
 export type InvitePreview = z.infer<typeof invitePreviewSchema>;
 export type EventInput = z.input<typeof eventInputSchema>;
 export type RaceEvent = z.infer<typeof eventSchema>;
+export type AvailabilityRow = z.infer<typeof availabilityRowSchema>;

@@ -20,10 +20,14 @@ Owner: Baraon (GitHub `baraon`), based in America/Chicago, develops on Windows.
   nullable: `NULL` = not chosen yet; the web app saves the browser's zone on first login.
   `DISCORD_REDIRECT_URI` defaults to `APP_URL/auth/discord/callback`. Login accepts
   `?returnTo=/path` (same-site paths only) so invite links survive sign-in.
-- **Phase 2 (groups, teams, events): built**, awaiting the owner's check. Routes in
+- **Phase 2 (groups, teams, events): done.** Routes in
   `apps/api/src/routes/{groups,invites,teams,events}.ts`; authorization helpers in
   `apps/api/src/auth/permissions.ts` (non-members get 404, members lacking a flag get 403).
-- **Phase 3 (availability editor): next.**
+- **Phase 3 (availability editor): built**, awaiting the owner's check. API in
+  `apps/api/src/routes/availability.ts` + `apps/api/src/db/availability.ts`; editor in
+  `apps/web/src/pages/AvailabilityEditor.tsx`. Moving an event trims availability to the new
+  window in the same transaction (deferred DB check at commit).
+- **Phase 4 (overview and launch): next.**
 - A Discord application exists; its client ID/secret are in the owner's local `.env` only.
 - Production domain: **not decided.** Hosting: cheapest option, one small VPS with Docker Compose.
 
@@ -60,7 +64,8 @@ Owner: Baraon (GitHub `baraon`), based in America/Chicago, develops on Windows.
   `track_timezone`. Created by owner/admins with `can_manage_events`.
 - **Availability:** per driver per event, blocks of `available` / `maybe` / `unavailable`. A
   driver edits their own; owner/admins with `can_manage_availability` can edit anyone's. Saving
-  replaces the driver's whole row for that event in one transaction.
+  replaces the driver's whole row for that event in one transaction. Only drivers on the event's
+  team have a row. Moving an event keeps rows at the same real-world times, trimmed to fit.
 - Authorization is checked in the API on every request against `group_members`.
 - Every member of a group sees all of its teams and events. Only the owner grants or revokes
   admin flags. `can_manage_members` covers invites and removing drivers; only the owner removes
@@ -115,8 +120,9 @@ Run `pnpm format` before committing; CI fails on Prettier differences.
 - Windows. Repo at `C:\Users\galle\Projects\lmu-race-planner`. Docker hot reload is unreliable
   from Windows folders; set `VITE_POLL=true` in `.env` if edits don't show up (or use WSL). The
   API's `tsx watch` doesn't see edits either: `docker compose restart api` after changing it.
-- API tests that need Postgres skip without `DATABASE_URL`; run them in the dev stack with
-  `docker compose exec api pnpm --filter @lmu/api test`.
+- API tests that need Postgres skip without a database URL. In the dev stack run
+  `docker compose exec api pnpm --filter @lmu/api test`: they use `TEST_DATABASE_URL`
+  (`lmu_test`, created automatically), never the dev data. CI uses its throwaway `DATABASE_URL`.
 - `.env` (git-ignored) holds `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `SESSION_SECRET`, etc.
   Discord redirect URI registered: `http://localhost:5173/auth/discord/callback`.
 

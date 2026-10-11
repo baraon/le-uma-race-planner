@@ -40,7 +40,7 @@ production Dockerfiles and Caddy, sample timeline with timezone switcher on the 
   logout.
 - **Done when:** a user signs in, sees their name and avatar, sets a timezone and logs out.
 
-### Phase 2 — Groups, teams and events (built; awaiting owner check)
+### Phase 2 — Groups, teams and events ✅
 
 - Create a group (creator = owner). Invite links (expiry, max uses). Join via link.
 - Owner grants/revokes admin flags. Admins create teams; drivers join/leave teams themselves.
@@ -48,14 +48,15 @@ production Dockerfiles and Caddy, sample timeline with timezone switcher on the 
 - Every endpoint authorizes against `group_members`.
 - **Done when:** a manager creates an event and each driver sees it in their own local time.
 
-### Phase 3 — Availability editor
+### Phase 3 — Availability editor (built; awaiting owner check)
 
 - Paint slots by click-and-drag (mouse and touch), keyboard support (arrows move, space paints).
 - "Available for whole race" and "Clear" shortcuts; explicit Save; unsaved changes flagged.
 - Save replaces the driver's row in one transaction; DB constraints are the last line of defense.
 - Admins with `can_manage_availability` can edit any driver's row (driver picker).
-- Decide what happens to saved availability when an event is moved or shortened. Today the
-  database rejects such an edit (the API answers 409); clipping or shifting the rows may be nicer.
+- Decided: when an event moves or changes length, saved availability keeps its real-world times,
+  trimmed to the new window and shrunk to whole slots of the new grid (`clipToWindow`).
+- Only drivers on the event's team have a row; every group member can read all rows.
 - **Done when:** drivers in different timezones paint the same slots and see identical results.
 
 ### Phase 4 — Overview and launch

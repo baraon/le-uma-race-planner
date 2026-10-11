@@ -2,9 +2,11 @@
  * Just enough client-side routing for a handful of pages: the current path, plus navigation
  * through the History API. Caddy (and Vite in dev) serve index.html for any path.
  */
-import { useSyncExternalStore, type MouseEvent } from 'react';
+import { useEffect, useSyncExternalStore, type MouseEvent } from 'react';
 
 const listeners = new Set<() => void>();
+/** Set while a page has unsaved changes; returns false to cancel navigation. */
+let guard: (() => boolean) | null = null;
 
 function subscribe(listener: () => void) {
   listeners.add(listener);
@@ -19,7 +21,13 @@ export function usePath(): string {
   return useSyncExternalStore(subscribe, () => window.location.pathname);
 }
 
+/** True if it's fine to throw away the current page's state (asks when there are unsaved changes). */
+export function confirmDiscard(): boolean {
+  return !guard || guard();
+}
+
 export function navigate(to: string, { replace = false } = {}) {
+  if (!confirmDiscard()) return;
   if (replace) window.history.replaceState(null, '', to);
   else window.history.pushState(null, '', to);
   listeners.forEach((l) => l());
@@ -45,4 +53,19 @@ export function matchRoute(pattern: string, path: string): Record<string, string
     else if (w !== g) return null;
   }
   return params;
+}
+
+/** While `active`, leaving the page (in-app link, reload, closing the tab) asks first. */
+export function useNavigationGuard(active: boolean, message: string) {
+  useEffect(() => {
+    if (!active) return;
+    const confirmLeave = () => window.confirm(message);
+    const onBeforeUnload = (e: BeforeUnloadEvent) => e.preventDefault();
+    guard = confirmLeave;
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => {
+      if (guard === confirmLeave) guard = null;
+      window.removeEventListener('beforeunload', onBeforeUnload);
+    };
+  }, [active, message]);
 }

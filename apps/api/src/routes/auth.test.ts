@@ -21,7 +21,7 @@ import { createDb, createSql, type Db, type Sql } from '../db/client';
 import { migrate } from '../db/migrate';
 import { sessions, users } from '../db/schema';
 
-const DATABASE_URL = process.env.DATABASE_URL;
+const DATABASE_URL = process.env.TEST_DATABASE_URL ?? process.env.DATABASE_URL;
 const APP_URL = 'http://localhost:5173';
 const DAY = 24 * 60 * 60 * 1000;
 

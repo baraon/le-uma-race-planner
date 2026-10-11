@@ -50,6 +50,8 @@ services:
       <<: *node-env
       NODE_ENV: development
       DATABASE_URL: postgres://${POSTGRES_USER:-lmu}:${POSTGRES_PASSWORD:-lmu-dev-password}@db:5432/${POSTGRES_DB:-lmu}
+      # API tests run in the dev stack use their own database, never your dev data.
+      TEST_DATABASE_URL: postgres://${POSTGRES_USER:-lmu}:${POSTGRES_PASSWORD:-lmu-dev-password}@db:5432/lmu_test
       SESSION_SECRET: ${SESSION_SECRET:-dev-only-session-secret-change-me-0000000000}
       APP_URL: ${APP_URL:-http://localhost:5173}
       RUN_MIGRATIONS: 'true'

@@ -1,4 +1,5 @@
 import {
+  availabilityRowSchema,
   createdInviteSchema,
   eventSchema,
   groupDetailSchema,
@@ -12,6 +13,7 @@ import {
   type HealthResponse,
   type Me,
   type Permissions,
+  type SlotBlock,
   type UpdateMe,
 } from '@lmu/shared';
 import { z } from 'zod';
@@ -131,3 +133,16 @@ export const createEvent = (teamId: string, input: EventInput) =>
 export const updateEvent = (id: string, input: EventInput) =>
   request('PUT', `/api/events/${id}`, parseWith(eventSchema), input);
 export const deleteEvent = (id: string) => request('DELETE', `/api/events/${id}`, ignore);
+
+// Availability
+export const getAvailability = (eventId: string) =>
+  request('GET', `/api/events/${eventId}/availability`, parseWith(z.array(availabilityRowSchema)));
+export const saveAvailability = (eventId: string, userId: string, blocks: SlotBlock[]) =>
+  request(
+    'PUT',
+    `/api/events/${eventId}/availability/${userId}`,
+    parseWith(availabilityRowSchema),
+    {
+      blocks,
+    },
+  );

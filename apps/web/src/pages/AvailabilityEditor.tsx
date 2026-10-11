@@ -1,0 +1,385 @@
+/**
+ * Paint availability on the race timeline. Slots are counted from the green flag, so every
+ * driver paints the same instants whatever their timezone; only the labels are local.
+ *
+ * Mouse and touch: press and drag across the strip. Keyboard: arrows move, Space paints, Shift
+ * + arrows paints while moving, 1/2/3 pick a status and 0 the eraser.
+ */
+import {
+  blocksToPaint,
+  paintToBlocks,
+  slotCount,
+  type AvailabilityRow,
+  type AvailabilityStatus,
+  type EventWindow,
+  type GroupDetail,
+  type Me,
+  type Paint,
+  type RaceEvent,
+  type UserSummary,
+} from '@lmu/shared';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
+import { slotClass, statusClass, statusLabel } from '../components/status';
+import { describeSlots, SlotStrip, StatusLegend, TimeAxis } from '../components/Timeline';
+import { button, Card, ErrorText, Muted } from '../components/ui';
+import { Avatar } from '../UserMenu';
+import * as api from '../lib/api';
+import { keys, useAvailability, useGroupMutation } from '../lib/queries';
+import { confirmDiscard, useNavigationGuard } from '../lib/router';
+import { viewerTimeZone } from '../lib/session';
+
+type Brush = AvailabilityStatus | null;
+
+const brushes: { brush: Brush; key: string; label: string }[] = [
+  { brush: 'available', key: '1', label: statusLabel.available },
+  { brush: 'maybe', key: '2', label: statusLabel.maybe },
+  { brush: 'unavailable', key: '3', label: statusLabel.unavailable },
+  { brush: null, key: '0', label: 'Eraser' },
+];
+
+const nameOf = (u: UserSummary) => u.displayName ?? u.username;
+
+export function AvailabilitySection({
+  event,
+  group,
+  me,
+}: {
+  event: RaceEvent;
+  group: GroupDetail;
+  me: Me;
+}) {
+  const availability = useAvailability(event.id);
+  const w: EventWindow = {
+    startsAt: new Date(event.startsAt),
+    durationMinutes: event.durationMinutes,
+  };
+  const count = slotCount(w);
+  const zone = viewerTimeZone(me);
+
+  const team = group.teams.find((t) => t.id === event.teamId);
+  const drivers = (team?.memberIds ?? [])
+    .map((id) => group.members.find((m) => m.user.id === id)?.user)
+    .filter((u): u is UserSummary => u !== undefined);
+  const onTeam = drivers.some((d) => d.id === me.id);
+  const editable = group.permissions.manageAvailability
+    ? drivers
+    : drivers.filter((d) => d.id === me.id);
+  const [targetId, setTargetId] = useState(onTeam ? me.id : (editable[0]?.id ?? null));
+  const target = editable.find((d) => d.id === targetId) ?? null;
+  const join = useGroupMutation(group.id, () => api.joinTeam(event.teamId));
+
+  const rows = new Map((availability.data ?? []).map((r) => [r.userId, r]));
+  const paintOf = (userId: string): Paint => blocksToPaint(rows.get(userId)?.blocks ?? [], count);
+
+  return (
+    <>
+      <Card
+        title="Your availability"
+        action={
+          editable.length > 1 && (
+            <label className="flex items-center gap-2 text-sm text-text-muted">
+              Editing
+              <select
+                value={targetId ?? ''}
+                onChange={(e) => {
+                  if (confirmDiscard()) setTargetId(e.target.value);
+                }}
+                className="rounded-md border border-border bg-surface-raised px-2 py-1 text-text"
+              >
+                {editable.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.id === me.id ? `${nameOf(d)} (you)` : nameOf(d)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )
+        }
+      >
+        {availability.isPending ? (
+          <Muted>Loading…</Muted>
+        ) : availability.error ? (
+          <ErrorText error={availability.error} />
+        ) : target ? (
+          <PaintEditor
+            key={target.id}
+            event={event}
+            window={w}
+            target={target}
+            isSelf={target.id === me.id}
+            viewerZone={zone}
+            saved={rows.get(target.id)}
+          />
+        ) : (
+          <div className="flex flex-col items-start gap-3">
+            <Muted>Only drivers on {event.teamName} mark availability for this race.</Muted>
+            <button
+              type="button"
+              className={button.primary}
+              disabled={join.isPending}
+              onClick={() => join.mutate(undefined, { onSuccess: () => setTargetId(me.id) })}
+            >
+              Join {event.teamName}
+            </button>
+            <ErrorText error={join.error} />
+          </div>
+        )}
+      </Card>
+
+      <Card title={`${event.teamName} drivers`}>
+        {drivers.length === 0 ? (
+          <Muted>Nobody is on this team yet.</Muted>
+        ) : (
+          <div className="overflow-x-auto">
+            <div className="grid min-w-[640px] grid-cols-[140px_1fr] items-center gap-x-3 gap-y-2">
+              <div />
+              <TimeAxis window={w} zone={zone} />
+              {drivers.map((d) => (
+                <DriverRow key={d.id} driver={d} paint={paintOf(d.id)} w={w} zone={zone} />
+              ))}
+            </div>
+            <div className="mt-4">
+              <StatusLegend />
+            </div>
+          </div>
+        )}
+      </Card>
+    </>
+  );
+}
+
+function DriverRow({
+  driver,
+  paint,
+  w,
+  zone,
+}: {
+  driver: UserSummary;
+  paint: Paint;
+  w: EventWindow;
+  zone: string;
+}) {
+  return (
+    <>
+      <div className="flex min-w-0 items-center gap-2">
+        <Avatar me={driver} size={22} />
+        <span className="truncate text-sm">{nameOf(driver)}</span>
+      </div>
+      <SlotStrip window={w} paint={paint} zone={zone} name={nameOf(driver)} />
+    </>
+  );
+}
+
+function PaintEditor({
+  event,
+  window: w,
+  target,
+  isSelf,
+  viewerZone,
+  saved,
+}: {
+  event: RaceEvent;
+  window: EventWindow;
+  target: UserSummary;
+  isSelf: boolean;
+  viewerZone: string;
+  saved: AvailabilityRow | undefined;
+}) {
+  const count = slotCount(w);
+  const savedPaint = blocksToPaint(saved?.blocks ?? [], count);
+  const [draft, setDraft] = useState<Paint>(savedPaint);
+  const [brush, setBrush] = useState<Brush>('available');
+  const [cursor, setCursor] = useState(0);
+  const [hover, setHover] = useState<number | null>(null);
+  const [focused, setFocused] = useState(false);
+  const strip = useRef<HTMLDivElement>(null);
+  const drag = useRef<{ last: number } | null>(null);
+  const qc = useQueryClient();
+
+  const dirty = draft.some((s, i) => s !== savedPaint[i]);
+  useNavigationGuard(dirty, 'You have unsaved availability. Leave without saving?');
+
+  const save = useMutation({
+    mutationFn: () => api.saveAvailability(event.id, target.id, paintToBlocks(draft)),
+    onSuccess: (row) => {
+      qc.setQueryData<AvailabilityRow[]>(keys.availability(event.id), (rows = []) => [
+        ...rows.filter((r) => r.userId !== row.userId),
+        ...(row.blocks.length > 0 ? [row] : []),
+      ]);
+    },
+  });
+
+  const paintRange = (a: number, b: number, with_: Brush = brush) => {
+    const [from, to] = a <= b ? [a, b] : [b, a];
+    setDraft((d) => d.map((s, i) => (i >= from && i <= to ? with_ : s)));
+    save.reset();
+  };
+
+  const indexAt = (clientX: number) => {
+    const rect = strip.current!.getBoundingClientRect();
+    const i = Math.floor(((clientX - rect.left) / rect.width) * count);
+    return Math.max(0, Math.min(count - 1, i));
+  };
+
+  const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    strip.current!.focus();
+    strip.current!.setPointerCapture(e.pointerId);
+    const i = indexAt(e.clientX);
+    drag.current = { last: i };
+    setCursor(i);
+    paintRange(i, i);
+  };
+  const onPointerMove = (e: PointerEvent<HTMLDivElement>) => {
+    const i = indexAt(e.clientX);
+    setHover(i);
+    if (!drag.current) return;
+    // Fill from the last position so fast drags don't skip slots.
+    paintRange(drag.current.last, i);
+    drag.current.last = i;
+    setCursor(i);
+  };
+  const endDrag = () => {
+    drag.current = null;
+  };
+
+  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    const move = (to: number) => {
+      const next = Math.max(0, Math.min(count - 1, to));
+      if (e.shiftKey) paintRange(cursor, next);
+      setCursor(next);
+    };
+    const picked = brushes.find((b) => b.key === e.key);
+    if (picked) setBrush(picked.brush);
+    else if (e.key === 'ArrowRight') move(cursor + 1);
+    else if (e.key === 'ArrowLeft') move(cursor - 1);
+    else if (e.key === 'Home') move(0);
+    else if (e.key === 'End') move(count - 1);
+    else if (e.key === ' ' || e.key === 'Enter') paintRange(cursor, cursor);
+    else if (e.key === 'Delete' || e.key === 'Backspace') paintRange(cursor, cursor, null);
+    else return;
+    e.preventDefault();
+  };
+
+  const shown = hover ?? cursor;
+  const shownStatus = draft[shown] ?? null;
+  const theirZone =
+    !isSelf && target.timezone && target.timezone !== viewerZone ? target.timezone : null;
+
+  return (
+    <div className="flex flex-col gap-4">
+      <fieldset className="flex flex-wrap items-center gap-2">
+        <legend className="sr-only">Paint with</legend>
+        {brushes.map((b) => (
+          <label
+            key={b.key}
+            className={`flex cursor-pointer items-center gap-2 rounded-md border px-3 py-1.5 text-sm ${
+              brush === b.brush ? 'border-text bg-surface-raised' : 'border-border'
+            }`}
+          >
+            <input
+              type="radio"
+              name="brush"
+              className="sr-only"
+              checked={brush === b.brush}
+              onChange={() => setBrush(b.brush)}
+            />
+            <span
+              className={`size-4 rounded-sm ${b.brush ? statusClass[b.brush] : 'slot-empty border border-text-muted'}`}
+              aria-hidden
+            />
+            {b.label}
+            <kbd className="text-[10px] text-text-muted">{b.key}</kbd>
+          </label>
+        ))}
+      </fieldset>
+
+      <div className="overflow-x-auto">
+        <div className="min-w-[640px]">
+          <TimeAxis window={w} zone={viewerZone} />
+          <div
+            ref={strip}
+            role="slider"
+            tabIndex={0}
+            aria-label={`Availability for ${isSelf ? 'you' : nameOf(target)}. Arrow keys move, Space paints, Shift and arrows paint while moving.`}
+            aria-valuemin={1}
+            aria-valuemax={count}
+            aria-valuenow={cursor + 1}
+            aria-valuetext={`${describeSlots(w, cursor, cursor + 1, viewerZone)}: ${draft[cursor] ? statusLabel[draft[cursor]!] : 'no answer'}`}
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={endDrag}
+            onPointerCancel={endDrag}
+            onPointerLeave={() => setHover(null)}
+            onKeyDown={onKeyDown}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            className="flex h-12 cursor-crosshair touch-none select-none gap-px rounded-md outline-none focus-visible:ring-2 focus-visible:ring-accent-strong focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+          >
+            {draft.map((s, i) => (
+              <div
+                key={i}
+                className={`min-w-0 flex-1 rounded-[2px] ${slotClass(s)} ${
+                  focused && i === cursor ? 'outline-2 outline-offset-1 outline-text' : ''
+                } ${s !== savedPaint[i] ? 'opacity-80' : ''}`}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <p className="min-h-5 text-sm" aria-hidden>
+        <span className="text-text-muted">{describeSlots(w, shown, shown + 1, viewerZone)}</span>
+        {theirZone && (
+          <span className="text-text-muted">
+            {' '}
+            · {describeSlots(w, shown, shown + 1, theirZone)} for {nameOf(target)}
+          </span>
+        )}{' '}
+        · {shownStatus ? statusLabel[shownStatus] : 'No answer'}
+      </p>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          className={button.secondary}
+          onClick={() => paintRange(0, count - 1, 'available')}
+        >
+          Available for whole race
+        </button>
+        <button
+          type="button"
+          className={button.secondary}
+          onClick={() => paintRange(0, count - 1, null)}
+        >
+          Clear
+        </button>
+        {dirty && (
+          <button type="button" className={button.link} onClick={() => setDraft(savedPaint)}>
+            Undo changes
+          </button>
+        )}
+        <span className="ml-auto flex items-center gap-3">
+          <span aria-live="polite" className="text-sm">
+            {dirty ? (
+              <span className="text-maybe">● Unsaved changes</span>
+            ) : save.isSuccess ? (
+              <span className="text-available">✓ Saved</span>
+            ) : null}
+          </span>
+          <button
+            type="button"
+            className={button.primary}
+            disabled={!dirty || save.isPending}
+            onClick={() => save.mutate()}
+          >
+            {save.isPending ? 'Saving…' : 'Save'}
+          </button>
+        </span>
+      </div>
+      <ErrorText error={save.error} />
+    </div>
+  );
+}

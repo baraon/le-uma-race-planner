@@ -6,7 +6,8 @@ import { upsertDiscordUser } from './auth/users';
 import { createDb, createSql, type Db, type Sql } from './db/client';
 import { migrate } from './db/migrate';
 
-export const DATABASE_URL = process.env.DATABASE_URL;
+/** The dev stack points tests at a separate database; CI uses its throwaway DATABASE_URL. */
+export const DATABASE_URL = process.env.TEST_DATABASE_URL ?? process.env.DATABASE_URL;
 export const APP_URL = 'http://localhost:5173';
 
 export const testConfig = {

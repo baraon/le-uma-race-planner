@@ -36,3 +36,24 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
+
+/*
+ * Availability slots. Each status has a pattern as well as a color, so they stay
+ * distinguishable without color vision: solid, stripes, cross-hatch.
+ */
+.slot-available {
+  background-color: var(--color-available);
+}
+.slot-maybe {
+  background-color: var(--color-maybe);
+  background-image: repeating-linear-gradient(135deg, rgb(0 0 0 / 0.35) 0 2px, transparent 2px 6px);
+}
+.slot-unavailable {
+  background-color: var(--color-unavailable);
+  background-image:
+    repeating-linear-gradient(45deg, rgb(0 0 0 / 0.35) 0 1.5px, transparent 1.5px 5px),
+    repeating-linear-gradient(-45deg, rgb(0 0 0 / 0.35) 0 1.5px, transparent 1.5px 5px);
+}
+.slot-empty {
+  background-color: var(--color-empty);
+}

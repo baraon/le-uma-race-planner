@@ -291,6 +291,15 @@ function EventForm({ group, me, event }: { group: GroupDetail; me: Me; event?: R
             {startsAt && valid && formatDuration(durationMinutes)}
           </span>
         </div>
+        {event &&
+          startsAt &&
+          (startsAt.getTime() !== new Date(event.startsAt).getTime() ||
+            durationMinutes !== event.durationMinutes) && (
+            <p className="text-sm text-text-muted">
+              Drivers&apos; saved availability keeps its real-world times; any part outside the new
+              race window (or off its 15-minute grid) is removed.
+            </p>
+          )}
         <ErrorText error={save.error} />
       </form>
     </Card>

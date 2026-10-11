@@ -15,6 +15,7 @@ import {
   type SlotBlock,
 } from '@lmu/shared';
 import { useMemo, useState } from 'react';
+import { slotClass, statusClass as statusStyle, statusLabel } from './components/status';
 
 // Sample: a 6-hour race starting 2026-11-14 18:00 UTC.
 const sampleRace: EventWindow = {
@@ -53,18 +54,6 @@ const sampleDrivers: { name: string; zone: string; blocks: SlotBlock[] }[] = [
     blocks: [{ startSlot: 14, endSlot: 24, status: 'available' }],
   },
 ];
-
-const statusStyle: Record<AvailabilityStatus, string> = {
-  available: 'bg-available',
-  maybe: 'bg-maybe',
-  unavailable: 'bg-unavailable',
-};
-
-const statusLabel: Record<AvailabilityStatus, string> = {
-  available: 'Available',
-  maybe: 'Maybe',
-  unavailable: 'Not available',
-};
 
 export function TimelinePreview({ defaultZone }: { defaultZone: string }) {
   const [zone, setZone] = useState(defaultZone);
@@ -166,7 +155,7 @@ export function TimelinePreview({ defaultZone }: { defaultZone: string }) {
           <ul className="mt-4 flex flex-wrap justify-end gap-4 text-xs text-text-muted">
             {(Object.keys(statusLabel) as AvailabilityStatus[]).map((s) => (
               <li key={s} className="flex items-center gap-1.5">
-                <span className={`size-3 rounded-full ${statusStyle[s]}`} aria-hidden />
+                <span className={`size-3 rounded-sm ${statusStyle[s]}`} aria-hidden />
                 {statusLabel[s]}
               </li>
             ))}
@@ -200,7 +189,7 @@ function DriverRow({
             <div
               key={i}
               title={`${formatSlotLabel(at, viewerZone)} for you · ${formatSlotLabel(at, row.zone)} for ${row.name} · ${s ? statusLabel[s] : 'No answer'}`}
-              className={`h-7 flex-1 rounded-sm ${s ? statusStyle[s] : 'bg-empty'}`}
+              className={`h-7 flex-1 rounded-sm ${slotClass(s)}`}
             />
           );
         })}

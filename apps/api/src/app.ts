@@ -6,6 +6,7 @@ import type { DiscordClient } from './auth/discord';
 import type { Config } from './config';
 import type { Db } from './db/client';
 import { authRoutes } from './routes/auth';
+import { availabilityRoutes } from './routes/availability';
 import { eventRoutes } from './routes/events';
 import { groupRoutes } from './routes/groups';
 import { healthRoutes, type DbPing } from './routes/health';
@@ -66,7 +67,14 @@ export async function buildApp({ config, pingDb, db, discord = null, logger }: A
   await app.register(healthRoutes, { prefix: '/api', pingDb });
   if (db) {
     await app.register(authRoutes, { prefix: '/auth', db, discord, appUrl: allowedOrigin });
-    for (const routes of [meRoutes, groupRoutes, inviteRoutes, teamRoutes, eventRoutes]) {
+    for (const routes of [
+      meRoutes,
+      groupRoutes,
+      inviteRoutes,
+      teamRoutes,
+      eventRoutes,
+      availabilityRoutes,
+    ]) {
       await app.register(routes, { prefix: '/api', db });
     }
   }

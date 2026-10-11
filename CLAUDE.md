@@ -15,7 +15,11 @@ Owner: Baraon (GitHub `baraon`), based in America/Chicago, develops on Windows.
 ## Current status
 
 - **Phase 0 (platform setup): done.** Monorepo, Docker Compose dev stack, Postgres schema, CI.
-- **Phase 1 (Discord login): next.** See `docs/PLAN.md`.
+- **Phase 1 (Discord login): built**, awaiting the owner's real sign-in check. See `docs/PLAN.md`.
+  Auth code lives in `apps/api/src/auth/` (Discord client, sessions, `requireUser` preHandler for
+  routes that need a signed-in user) and `apps/api/src/routes/{auth,me}.ts`. `users.timezone` is
+  nullable: `NULL` = not chosen yet, and the web app saves the browser's zone on first login.
+  `DISCORD_REDIRECT_URI` defaults to `APP_URL/auth/discord/callback`.
 - A Discord application exists; its client ID/secret are in the owner's local `.env` only.
 - Production domain: **not decided.** Hosting: cheapest option, one small VPS with Docker Compose.
 
@@ -99,7 +103,10 @@ Run `pnpm format` before committing; CI fails on Prettier differences.
 ## Owner's environment
 
 - Windows. Repo at `C:\Users\galle\Projects\lmu-race-planner`. Docker hot reload is unreliable
-  from Windows folders; set `VITE_POLL=true` in `.env` if edits don't show up (or use WSL).
+  from Windows folders; set `VITE_POLL=true` in `.env` if edits don't show up (or use WSL). The
+  API's `tsx watch` doesn't see edits either: `docker compose restart api` after changing it.
+- API tests that need Postgres skip without `DATABASE_URL`; run them in the dev stack with
+  `docker compose exec api pnpm --filter @lmu/api test`.
 - `.env` (git-ignored) holds `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `SESSION_SECRET`, etc.
   Discord redirect URI registered: `http://localhost:5173/auth/discord/callback`.
 

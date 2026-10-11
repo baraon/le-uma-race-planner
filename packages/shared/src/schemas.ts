@@ -33,5 +33,19 @@ export const healthResponseSchema = z.object({
   version: z.string(),
 });
 
+/** The signed-in user, as returned by `GET /api/me`. */
+export const meSchema = z.object({
+  id: z.string().uuid(),
+  username: z.string(),
+  displayName: z.string().nullable(),
+  avatarUrl: z.string().url(),
+  /** IANA zone, or null if the user hasn't chosen one yet. */
+  timezone: z.string().nullable(),
+});
+
+export const updateMeSchema = z.object({ timezone: timeZoneSchema }).strict();
+
 export type SaveAvailability = z.infer<typeof saveAvailabilitySchema>;
 export type HealthResponse = z.infer<typeof healthResponseSchema>;
+export type Me = z.infer<typeof meSchema>;
+export type UpdateMe = z.infer<typeof updateMeSchema>;

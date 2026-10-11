@@ -1,6 +1,8 @@
 import {
   eventEnd,
   formatDateTime,
+  formatSlotLabel,
+  localDayChanged,
   zoneAbbreviation,
   type Me,
   type RaceEvent,
@@ -19,6 +21,18 @@ import { AvailabilitySection } from './AvailabilityEditor';
 function raceWindow(e: RaceEvent) {
   const start = new Date(e.startsAt);
   return { start, end: eventEnd({ startsAt: start, durationMinutes: e.durationMinutes }) };
+}
+
+/**
+ * The chequered flag, short: "22:00 CDT" on the same local day, "Tue 05:00 GMT+2" otherwise,
+ * and the start's zone name too if the clocks changed mid-race.
+ */
+function formatSpanEnd(start: Date, end: Date, zone: string, abbreviateStart = true) {
+  const startAbbr = zoneAbbreviation(start, zone);
+  const endAbbr = zoneAbbreviation(end, zone);
+  return `${formatSlotLabel(end, zone, localDayChanged(start, end, zone))} ${endAbbr}${
+    abbreviateStart && startAbbr !== endAbbr ? ` (starts ${startAbbr})` : ''
+  }`;
 }
 
 function TimeCell({ at, zone }: { at: Date; zone: string }) {
@@ -49,8 +63,7 @@ export function EventPage({ eventId, me }: { eventId: string; me: Me }) {
   const zone = viewerTimeZone(me);
   const canEdit = group.data?.permissions.manageEvents ?? false;
 
-  const zones: { label: string; zone: string }[] = [
-    { label: 'Your time', zone },
+  const otherZones: { label: string; zone: string }[] = [
     ...(e.trackTimezone && e.trackTimezone !== zone
       ? [{ label: 'Track time', zone: e.trackTimezone }]
       : []),
@@ -83,6 +96,26 @@ export function EventPage({ eventId, me }: { eventId: string; me: Me }) {
               .filter(Boolean)
               .join(' · ')}
           </p>
+          <p className="mt-3">
+            <span className="text-text-muted">Green flag</span>{' '}
+            <span className="font-medium">{formatDateTime(start, zone)}</span>
+            <span className="text-text-muted"> → </span>
+            {formatSpanEnd(start, end, zone)}{' '}
+            <span className="text-sm text-text-muted">({formatRelative(start)})</span>
+          </p>
+          {otherZones.length > 0 && (
+            <p className="text-xs text-text-muted">
+              {otherZones.map((z, i) => (
+                <span key={z.zone}>
+                  {i > 0 && ' · '}
+                  {z.label}{' '}
+                  <span className="text-text">
+                    {formatSlotLabel(start, z.zone)} → {formatSpanEnd(start, end, z.zone, false)}
+                  </span>
+                </span>
+              ))}
+            </p>
+          )}
         </div>
         {canEdit && (
           <div className="flex gap-2">
@@ -107,38 +140,6 @@ export function EventPage({ eventId, me }: { eventId: string; me: Me }) {
         )}
       </div>
       <ErrorText error={remove.error} />
-
-      <Card title="When">
-        <p className="mb-4 text-lg">
-          Green flag <TimeCell at={start} zone={zone} />{' '}
-          <span className="text-sm text-text-muted">({formatRelative(start)})</span>
-        </p>
-        <table className="w-full text-left text-sm">
-          <thead className="text-text-muted">
-            <tr>
-              <th className="py-1.5 pr-4 font-normal"></th>
-              <th className="py-1.5 pr-4 font-normal">Green flag</th>
-              <th className="py-1.5 font-normal">Chequered flag</th>
-            </tr>
-          </thead>
-          <tbody>
-            {zones.map((z) => (
-              <tr key={z.label} className="border-t border-border">
-                <th className="py-2 pr-4 font-medium">
-                  {z.label}
-                  <span className="block text-xs font-normal text-text-muted">{z.zone}</span>
-                </th>
-                <td className="py-2 pr-4">
-                  <TimeCell at={start} zone={z.zone} />
-                </td>
-                <td className="py-2">
-                  <TimeCell at={end} zone={z.zone} />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </Card>
 
       {group.data && <AvailabilitySection event={e} group={group.data} me={me} />}
 

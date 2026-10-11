@@ -27,15 +27,29 @@ export function describePaint(w: EventWindow, paint: Paint, zone: string): strin
     .join('; ');
 }
 
-/** Hour ticks in `zone`, labelled with the weekday when the local date changes. */
-export function TimeAxis({ window: w, zone }: { window: EventWindow; zone: string }) {
-  const count = slotCount(w);
-  // Every hour for short races; every 2, 3, ... hours for long ones (about a dozen labels).
-  const step = 4 * Math.max(1, Math.ceil(count / 4 / 12));
+/**
+ * Hour ticks in `zone` for slots [from, to) of the race (the whole race by default), labelled
+ * with the weekday when the local date changes.
+ */
+export function TimeAxis({
+  window: w,
+  zone,
+  from = 0,
+  to,
+}: {
+  window: EventWindow;
+  zone: string;
+  from?: number;
+  to?: number;
+}) {
+  const end = to ?? slotCount(w);
+  const length = end - from;
+  // Every hour for short spans; every 2, 3, ... hours for long ones (about a dozen labels).
+  const step = 4 * Math.max(1, Math.ceil(length / 4 / 12));
   const ticks: { i: number; label: string }[] = [];
-  for (let i = 0; i < count; i += step) {
+  for (let i = from; i < end; i += step) {
     const at = slotStart(w, i);
-    const newDay = i === 0 || localDayChanged(slotStart(w, i - step), at, zone);
+    const newDay = i === 0 || localDayChanged(slotStart(w, Math.max(0, i - step)), at, zone);
     ticks.push({ i, label: formatSlotLabel(at, zone, newDay) });
   }
 
@@ -45,7 +59,7 @@ export function TimeAxis({ window: w, zone }: { window: EventWindow; zone: strin
         <span
           key={t.i}
           className="absolute whitespace-nowrap border-l border-border pl-1"
-          style={{ left: `${(t.i / count) * 100}%` }}
+          style={{ left: `${((t.i - from) / length) * 100}%` }}
         >
           {t.label}
         </span>

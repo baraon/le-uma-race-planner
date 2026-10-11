@@ -17,7 +17,6 @@ import { useState } from 'react';
 import { TimeZoneSelect } from '../components/TimeZoneSelect';
 import { AppLink, button, Card, ErrorText, input, Muted } from '../components/ui';
 import { createEvent, updateEvent } from '../lib/api';
-import { formatDuration } from '../lib/format';
 import { useEvent, useGroup, useInvalidateEvents } from '../lib/queries';
 import { navigate } from '../lib/router';
 import { viewerTimeZone } from '../lib/session';
@@ -308,9 +307,6 @@ function EventForm({ group, me, event }: { group: GroupDetail; me: Me; event?: R
           >
             Cancel
           </AppLink>
-          <span className="text-sm text-text-muted">
-            {startsAt && valid && formatDuration(durationMinutes)}
-          </span>
         </div>
         {event &&
           startsAt &&

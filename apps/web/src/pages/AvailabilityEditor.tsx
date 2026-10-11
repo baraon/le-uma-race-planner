@@ -96,7 +96,8 @@ export function AvailabilitySection({
               <select
                 value={targetId ?? ''}
                 onChange={(e) => {
-                  if (confirmDiscard()) setTargetId(e.target.value);
+                  const next = e.target.value;
+                  void confirmDiscard().then((ok) => ok && setTargetId(next));
                 }}
                 className="rounded-md border border-border bg-surface-raised px-2 py-1 text-text"
               >

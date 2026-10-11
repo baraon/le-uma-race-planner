@@ -4,13 +4,11 @@ import {
   eventSchema,
   groupDetailSchema,
   groupSummarySchema,
-  healthResponseSchema,
   invitePreviewSchema,
   inviteSchema,
   meSchema,
   type CreateInvite,
   type EventInput,
-  type HealthResponse,
   type Me,
   type Permissions,
   type SlotBlock,
@@ -57,13 +55,6 @@ const parseWith =
   <S extends z.ZodTypeAny>(schema: S) =>
   (d: unknown): z.output<S> =>
     schema.parse(d);
-
-export const getHealth = (): Promise<HealthResponse> =>
-  request('GET', '/api/health', parseWith(healthResponseSchema)).catch((err: unknown) => {
-    // A 503 still has a body worth showing ("db": "down").
-    if (err instanceof ApiError) return { status: 'ok', db: 'down', version: '?' } as const;
-    throw err;
-  });
 
 /** The signed-in user, or null when signed out. */
 export const getMe = (): Promise<Me | null> =>

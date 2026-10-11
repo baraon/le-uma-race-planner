@@ -9,6 +9,8 @@ export const button = {
     'inline-flex items-center justify-center gap-2 rounded-md border border-border bg-surface-raised px-3 py-1.5 text-sm hover:border-text-muted disabled:cursor-not-allowed disabled:opacity-50',
   danger:
     'inline-flex items-center justify-center gap-2 rounded-md border border-unavailable/50 px-3 py-1.5 text-sm text-unavailable hover:bg-unavailable/10 disabled:cursor-not-allowed disabled:opacity-50',
+  dangerSolid:
+    'inline-flex items-center justify-center gap-2 rounded-md bg-danger px-3.5 py-2 text-sm font-medium text-white hover:bg-danger/90 disabled:cursor-not-allowed disabled:opacity-50',
   link: 'text-accent-strong underline-offset-2 hover:underline disabled:opacity-50',
 };
 

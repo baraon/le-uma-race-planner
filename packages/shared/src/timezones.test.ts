@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { slotCount, slotStart, type EventWindow } from './slots';
 import {
+  formatDateTime,
   formatSlotLabel,
+  fromZonedInput,
   isValidTimeZone,
   localDayChanged,
+  toZonedInput,
   zoneAbbreviation,
   zoneOffsetMinutes,
 } from './timezones';
@@ -82,5 +85,62 @@ describe('validation', () => {
     expect(isValidTimeZone('-05:00')).toBe(false);
     expect(isValidTimeZone('Mars/Olympus_Mons')).toBe(false);
     expect(isValidTimeZone('')).toBe(false);
+  });
+});
+
+describe('entering wall-clock times', () => {
+  it('converts a local time in each zone to the same instant', () => {
+    const flag = '2026-09-26T11:00:00.000Z';
+    expect(fromZonedInput('2026-09-26T06:00', 'America/Chicago').toISOString()).toBe(flag);
+    expect(fromZonedInput('2026-09-26T13:00', 'Europe/Berlin').toISOString()).toBe(flag);
+    expect(fromZonedInput('2026-09-26T21:00', 'Australia/Sydney').toISOString()).toBe(flag);
+    expect(fromZonedInput('2026-09-26T16:30', 'Asia/Kolkata').toISOString()).toBe(flag);
+    expect(fromZonedInput('2026-09-26T11:00', 'UTC').toISOString()).toBe(flag);
+  });
+
+  it('round-trips through the datetime-local format', () => {
+    for (const zone of ['America/Chicago', 'Europe/Berlin', 'Australia/Sydney', 'Asia/Kolkata']) {
+      const instant = new Date('2026-11-14T18:15:00Z');
+      expect(fromZonedInput(toZonedInput(instant, zone), zone)).toEqual(instant);
+    }
+  });
+
+  it('picks the first of a repeated hour when clocks go back', () => {
+    // Chicago, 1 Nov 2026: 01:30 happens at 06:30 UTC (CDT) and again at 07:30 UTC (CST).
+    expect(fromZonedInput('2026-11-01T01:30', 'America/Chicago').toISOString()).toBe(
+      '2026-11-01T06:30:00.000Z',
+    );
+    // Sydney, 5 Apr 2026: 02:30 happens at 15:30 UTC (AEDT) and 16:30 UTC (AEST) the day before.
+    expect(fromZonedInput('2026-04-05T02:30', 'Australia/Sydney').toISOString()).toBe(
+      '2026-04-04T15:30:00.000Z',
+    );
+  });
+
+  it('moves a skipped time forward when clocks go forward', () => {
+    // Chicago, 8 Mar 2026: 02:00-03:00 doesn't exist; 02:30 becomes 03:30 CDT.
+    const t = fromZonedInput('2026-03-08T02:30', 'America/Chicago');
+    expect(t.toISOString()).toBe('2026-03-08T08:30:00.000Z');
+    expect(toZonedInput(t, 'America/Chicago')).toBe('2026-03-08T03:30');
+    // Berlin, 29 Mar 2026: 02:15 becomes 03:15 CEST.
+    expect(fromZonedInput('2026-03-29T02:15', 'Europe/Berlin').toISOString()).toBe(
+      '2026-03-29T01:15:00.000Z',
+    );
+  });
+
+  it('handles times next to local midnight', () => {
+    expect(fromZonedInput('2026-12-31T23:45', 'Asia/Kolkata').toISOString()).toBe(
+      '2026-12-31T18:15:00.000Z',
+    );
+    expect(toZonedInput(new Date('2026-12-31T18:45:00Z'), 'Asia/Kolkata')).toBe('2027-01-01T00:15');
+  });
+
+  it('formats a full date and time per zone', () => {
+    const t = new Date('2026-11-14T18:00:00Z');
+    expect(formatDateTime(t, 'America/Chicago')).toBe('Sat 14 Nov 2026, 12:00');
+    expect(formatDateTime(t, 'Australia/Sydney')).toBe('Sun 15 Nov 2026, 05:00');
+  });
+
+  it('rejects malformed input', () => {
+    expect(() => fromZonedInput('2026-11-14 18:00', 'UTC')).toThrow(RangeError);
   });
 });

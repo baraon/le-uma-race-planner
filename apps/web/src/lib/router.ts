@@ -31,3 +31,18 @@ export function linkClick(e: MouseEvent<HTMLAnchorElement>) {
   e.preventDefault();
   navigate(e.currentTarget.getAttribute('href') ?? '/');
 }
+
+/** Matches "/groups/:groupId" against a path; returns the params, or null if it doesn't fit. */
+export function matchRoute(pattern: string, path: string): Record<string, string> | null {
+  const want = pattern.split('/').filter(Boolean);
+  const got = path.split('/').filter(Boolean);
+  if (want.length !== got.length) return null;
+  const params: Record<string, string> = {};
+  for (let i = 0; i < want.length; i++) {
+    const w = want[i]!;
+    const g = got[i]!;
+    if (w.startsWith(':')) params[w.slice(1)] = decodeURIComponent(g);
+    else if (w !== g) return null;
+  }
+  return params;
+}

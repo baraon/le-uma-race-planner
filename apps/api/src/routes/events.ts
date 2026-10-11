@@ -1,0 +1,121 @@
+/**
+ * Events (races). Times cross the API as UTC ISO strings; the database stores timestamptz.
+ * Any member of the group can see its events; creating and editing needs `manageEvents`.
+ */
+import { eventInputSchema, type RaceEvent } from '@lmu/shared';
+import { and, asc, eq, gt, inArray, sql, type SQL } from 'drizzle-orm';
+import type { FastifyPluginAsync } from 'fastify';
+import { requireUser } from '../auth/authenticate';
+import { can } from '../auth/permissions';
+import type { Db } from '../db/client';
+import { events, groupMembers, groups, teams } from '../db/schema';
+import { requireMembership } from './groups';
+import { conflict, forbidden, idParam, notFound, parseBody, pgCode } from './http';
+
+const eventEnd = sql`${events.startsAt} + make_interval(mins => ${events.durationMinutes})`;
+
+async function selectEvents(db: Db, where: SQL | undefined): Promise<RaceEvent[]> {
+  const rows = await db
+    .select({ event: events, team: teams, group: groups })
+    .from(events)
+    .innerJoin(teams, eq(teams.id, events.teamId))
+    .innerJoin(groups, eq(groups.id, teams.groupId))
+    .where(where)
+    .orderBy(asc(events.startsAt), asc(events.name));
+  return rows.map(({ event, team, group }) => ({
+    id: event.id,
+    teamId: team.id,
+    teamName: team.name,
+    groupId: group.id,
+    groupName: group.name,
+    name: event.name,
+    startsAt: event.startsAt.toISOString(),
+    durationMinutes: event.durationMinutes,
+    track: event.track,
+    carClass: event.carClass,
+    trackTimezone: event.trackTimezone,
+  }));
+}
+
+/** The event and the caller's membership in its group; 404 for non-members. */
+async function eventContext(db: Db, eventId: string, userId: string) {
+  const [event] = await selectEvents(db, eq(events.id, eventId));
+  if (!event) throw notFound('Event not found');
+  const membership = await requireMembership(db, event.groupId, userId).catch(() => {
+    throw notFound('Event not found');
+  });
+  return { event, membership };
+}
+
+export const eventRoutes: FastifyPluginAsync<{ db: Db }> = async (app, { db }) => {
+  app.addHook('preHandler', requireUser(db));
+
+  /** Events that haven't finished yet, across every group the caller is in. */
+  app.get('/events/upcoming', async (req) => {
+    const myGroups = db
+      .select({ id: groupMembers.groupId })
+      .from(groupMembers)
+      .where(eq(groupMembers.userId, req.user!.id));
+    return selectEvents(db, and(inArray(teams.groupId, myGroups), gt(eventEnd, sql`now()`)));
+  });
+
+  app.get('/groups/:groupId/events', async (req) => {
+    const groupId = idParam(req.params, 'groupId');
+    await requireMembership(db, groupId, req.user!.id);
+    return selectEvents(db, eq(teams.groupId, groupId));
+  });
+
+  app.get('/events/:eventId', async (req) => {
+    const eventId = idParam(req.params, 'eventId');
+    return (await eventContext(db, eventId, req.user!.id)).event;
+  });
+
+  app.post('/teams/:teamId/events', async (req, reply) => {
+    const teamId = idParam(req.params, 'teamId');
+    const [team] = await db.select().from(teams).where(eq(teams.id, teamId));
+    if (!team) throw notFound('Team not found');
+    const m = await requireMembership(db, team.groupId, req.user!.id).catch(() => {
+      throw notFound('Team not found');
+    });
+    if (!can(m, 'manageEvents')) throw forbidden();
+
+    const input = parseBody(eventInputSchema, req.body);
+    const [row] = await db
+      .insert(events)
+      .values({ ...input, teamId, startsAt: new Date(input.startsAt), createdBy: req.user!.id })
+      .returning({ id: events.id });
+    const [created] = await selectEvents(db, eq(events.id, row!.id));
+    return reply.code(201).send(created);
+  });
+
+  // Full replacement of the editable fields. The team can't change here.
+  app.put('/events/:eventId', async (req) => {
+    const eventId = idParam(req.params, 'eventId');
+    const { membership } = await eventContext(db, eventId, req.user!.id);
+    if (!can(membership, 'manageEvents')) throw forbidden();
+
+    const input = parseBody(eventInputSchema, req.body);
+    await db
+      .update(events)
+      .set({ ...input, startsAt: new Date(input.startsAt) })
+      .where(eq(events.id, eventId))
+      .catch((err: unknown) => {
+        if (pgCode(err) === '23514') {
+          throw conflict(
+            'Drivers have availability outside the new times; ask them to clear it first',
+          );
+        }
+        throw err;
+      });
+    const [updated] = await selectEvents(db, eq(events.id, eventId));
+    return updated;
+  });
+
+  app.delete('/events/:eventId', async (req, reply) => {
+    const eventId = idParam(req.params, 'eventId');
+    const { membership } = await eventContext(db, eventId, req.user!.id);
+    if (!can(membership, 'manageEvents')) throw forbidden();
+    await db.delete(events).where(eq(events.id, eventId));
+    return reply.code(204).send();
+  });
+};

@@ -18,13 +18,22 @@ function useLoginError(): string | null {
   return reason ? (loginMessages[reason] ?? loginMessages.failed!) : null;
 }
 
+/** Sends the user back to the page they were on (e.g. an invite link) after Discord. */
+function loginHref(): string {
+  const here = window.location.pathname + window.location.search;
+  return here === '/' ? '/auth/discord' : `/auth/discord?returnTo=${encodeURIComponent(here)}`;
+}
+
 export function SignInPage() {
   const error = useLoginError();
+  const isInvite = window.location.pathname.startsWith('/invite/');
 
   return (
     <section className="mx-auto mt-10 flex w-full max-w-md flex-col gap-5 rounded-xl border border-border bg-surface p-8">
       <div>
-        <h2 className="text-xl font-semibold">Sign in</h2>
+        <h2 className="text-xl font-semibold">
+          {isInvite ? 'Sign in to accept your invite' : 'Sign in'}
+        </h2>
         <p className="mt-1 text-sm text-text-muted">
           Use your Discord account to mark when you can race and see your team&apos;s availability
           in your own timezone.
@@ -42,7 +51,7 @@ export function SignInPage() {
       )}
 
       <a
-        href="/auth/discord"
+        href={loginHref()}
         className="inline-flex items-center justify-center gap-2 rounded-md bg-discord px-4 py-2.5 font-medium text-white hover:bg-discord/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-strong"
       >
         <DiscordIcon />

@@ -24,7 +24,7 @@ recruitment, surveys, mobile apps, Discord bot or notifications.
 Monorepo, Docker Compose dev stack, Postgres with migrations, lint/format/typecheck/tests, CI,
 production Dockerfiles and Caddy, sample timeline with timezone switcher on the home page.
 
-### Phase 1 — Discord login (built; awaiting sign-in check)
+### Phase 1 — Discord login ✅
 
 - `GET /auth/discord`: random `state` in a short-lived signed cookie; redirect to Discord authorize
   URL with `scope=identify` and `response_type=code`.
@@ -40,7 +40,7 @@ production Dockerfiles and Caddy, sample timeline with timezone switcher on the 
   logout.
 - **Done when:** a user signs in, sees their name and avatar, sets a timezone and logs out.
 
-### Phase 2 — Groups, teams and events
+### Phase 2 — Groups, teams and events (built; awaiting owner check)
 
 - Create a group (creator = owner). Invite links (expiry, max uses). Join via link.
 - Owner grants/revokes admin flags. Admins create teams; drivers join/leave teams themselves.
@@ -54,6 +54,8 @@ production Dockerfiles and Caddy, sample timeline with timezone switcher on the 
 - "Available for whole race" and "Clear" shortcuts; explicit Save; unsaved changes flagged.
 - Save replaces the driver's row in one transaction; DB constraints are the last line of defense.
 - Admins with `can_manage_availability` can edit any driver's row (driver picker).
+- Decide what happens to saved availability when an event is moved or shortened. Today the
+  database rejects such an edit (the API answers 409); clipping or shifting the rows may be nicer.
 - **Done when:** drivers in different timezones paint the same slots and see identical results.
 
 ### Phase 4 — Overview and launch

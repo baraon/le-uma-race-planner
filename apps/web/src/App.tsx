@@ -1,11 +1,36 @@
+import type { Me } from '@lmu/shared';
 import { useQuery } from '@tanstack/react-query';
+import type { ReactNode } from 'react';
 import { getHealth } from './lib/api';
-import { linkClick, usePath } from './lib/router';
-import { useAdoptBrowserTimeZone, useMe, viewerTimeZone } from './lib/session';
+import { linkClick, matchRoute, usePath } from './lib/router';
+import { useAdoptBrowserTimeZone, useMe } from './lib/session';
+import { EditEventPage, NewEventPage } from './pages/EventFormPage';
+import { EventPage } from './pages/EventPage';
+import { GroupPage } from './pages/GroupPage';
+import { HomePage } from './pages/HomePage';
+import { InvitePage } from './pages/InvitePage';
 import { ProfilePage } from './ProfilePage';
 import { SignInPage } from './SignInPage';
-import { TimelinePreview } from './TimelinePreview';
 import { UserMenu } from './UserMenu';
+
+/** Pages for signed-in users, first match wins. */
+const routes: [string, (p: Record<string, string>, me: Me) => ReactNode][] = [
+  ['/', (_, me) => <HomePage me={me} />],
+  ['/profile', (_, me) => <ProfilePage me={me} />],
+  ['/groups/:groupId', (p, me) => <GroupPage key={p.groupId} groupId={p.groupId!} me={me} />],
+  ['/groups/:groupId/events/new', (p, me) => <NewEventPage groupId={p.groupId!} me={me} />],
+  ['/events/:eventId', (p, me) => <EventPage key={p.eventId} eventId={p.eventId!} me={me} />],
+  ['/events/:eventId/edit', (p, me) => <EditEventPage eventId={p.eventId!} me={me} />],
+  ['/invite/:token', (p) => <InvitePage token={p.token!} />],
+];
+
+function renderRoute(path: string, me: Me): ReactNode {
+  for (const [pattern, render] of routes) {
+    const params = matchRoute(pattern, path);
+    if (params) return render(params, me);
+  }
+  return <p className="text-sm text-text-muted">Page not found.</p>;
+}
 
 export function App() {
   const health = useQuery({ queryKey: ['health'], queryFn: getHealth });
@@ -24,10 +49,8 @@ export function App() {
     page = <p className="text-sm text-text-muted">Loading…</p>;
   } else if (!me.data) {
     page = <SignInPage />;
-  } else if (path === '/profile') {
-    page = <ProfilePage me={me.data} />;
   } else {
-    page = <TimelinePreview defaultZone={viewerTimeZone(me.data)} />;
+    page = renderRoute(path, me.data);
   }
 
   return (
@@ -54,7 +77,7 @@ export function App() {
           <span className={`size-2 rounded-full ${status.tone}`} aria-hidden />
           {status.label}
         </span>
-        <span>Phase 1 · development build {health.data ? `· API ${health.data.version}` : ''}</span>
+        <span>Phase 2 · development build {health.data ? `· API ${health.data.version}` : ''}</span>
       </footer>
     </div>
   );

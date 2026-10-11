@@ -238,6 +238,30 @@ describe.skipIf(!DATABASE_URL)('Discord login and sessions', () => {
     await app.close();
   });
 
+  it('returns to a same-site path after login, never an outside URL', async () => {
+    const app = await makeApp(fakeDiscord().client);
+    const loginVia = async (returnTo: string) => {
+      const start = await app.inject({
+        method: 'GET',
+        url: `/auth/discord?returnTo=${encodeURIComponent(returnTo)}`,
+      });
+      const state = new URL(start.headers.location as string).searchParams.get('state')!;
+      const stateCookie = start.cookies.find((c) => c.name === 'lmu_oauth_state')!;
+      const res = await app.inject({
+        method: 'GET',
+        url: `/auth/discord/callback?code=good-code&state=${encodeURIComponent(state)}`,
+        headers: { cookie: `lmu_oauth_state=${stateCookie.value}` },
+      });
+      return res.headers.location;
+    };
+
+    expect(await loginVia('/invite/abc_DEF-123')).toBe(`${APP_URL}/invite/abc_DEF-123`);
+    expect(await loginVia('//evil.example/x')).toBe(`${APP_URL}/`);
+    expect(await loginVia('https://evil.example')).toBe(`${APP_URL}/`);
+    expect(await loginVia('/\\evil.example')).toBe(`${APP_URL}/`);
+    await app.close();
+  });
+
   it('reports login as unavailable when Discord is not configured', async () => {
     const app = await makeApp(null);
     const res = await app.inject({ method: 'GET', url: '/auth/discord' });

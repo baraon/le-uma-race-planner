@@ -9,6 +9,7 @@ import {
 } from '@le-uma/shared';
 import { useMutation } from '@tanstack/react-query';
 import { confirmDialog } from '../components/Dialog';
+import { Tabs } from '../components/Tabs';
 import { AppLink, button, ErrorText, Muted } from '../components/ui';
 import { deleteEvent } from '../lib/api';
 import { formatDuration, formatRelative } from '../lib/format';
@@ -132,9 +133,28 @@ export function EventPage({ eventId, me }: { eventId: string; me: Me }) {
       </div>
       <ErrorText error={remove.error} />
 
-      {group.data && <AvailabilitySection event={e} group={group.data} me={me} />}
-      {group.data && <PaceCard event={e} group={group.data} me={me} />}
-      {group.data && <StintPlanCard event={e} group={group.data} me={me} />}
+      {group.data && (
+        <Tabs
+          label="Event sections"
+          tabs={[
+            {
+              id: 'availability',
+              label: 'Availability',
+              panel: <AvailabilitySection event={e} group={group.data} me={me} />,
+            },
+            {
+              id: 'strategy',
+              label: 'Pace & stint plan',
+              panel: (
+                <>
+                  <PaceCard event={e} group={group.data} me={me} />
+                  <StintPlanCard event={e} group={group.data} me={me} />
+                </>
+              ),
+            },
+          ]}
+        />
+      )}
     </>
   );
 }

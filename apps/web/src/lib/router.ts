@@ -6,8 +6,8 @@ import { useEffect, useSyncExternalStore, type MouseEvent } from 'react';
 import { confirmDialog } from '../components/Dialog';
 
 const listeners = new Set<() => void>();
-/** Set while a page has unsaved changes; resolves false to cancel navigation. */
-let guard: (() => Promise<boolean>) | null = null;
+/** One per component with unsaved changes; each resolves false to cancel navigation. */
+const guards = new Set<() => Promise<boolean>>();
 
 function subscribe(listener: () => void) {
   listeners.add(listener);
@@ -24,7 +24,8 @@ export function usePath(): string {
 
 /** Resolves true if it's fine to throw away the current page's state (asks if unsaved). */
 export async function confirmDiscard(): Promise<boolean> {
-  return !guard || guard();
+  const first = guards.values().next().value;
+  return first ? first() : true;
 }
 
 export function navigate(to: string, { replace = false } = {}) {
@@ -33,8 +34,8 @@ export function navigate(to: string, { replace = false } = {}) {
     else window.history.pushState(null, '', to);
     listeners.forEach((l) => l());
   };
-  if (!guard) go();
-  else void guard().then((ok) => ok && go());
+  if (guards.size === 0) go();
+  else void confirmDiscard().then((ok) => ok && go());
 }
 
 /** onClick for <a href> links: navigate in-app on a plain left click, else let the browser. */
@@ -71,10 +72,10 @@ export function useNavigationGuard(active: boolean, message: string) {
         danger: true,
       });
     const onBeforeUnload = (e: BeforeUnloadEvent) => e.preventDefault();
-    guard = confirmLeave;
+    guards.add(confirmLeave);
     window.addEventListener('beforeunload', onBeforeUnload);
     return () => {
-      if (guard === confirmLeave) guard = null;
+      guards.delete(confirmLeave);
       window.removeEventListener('beforeunload', onBeforeUnload);
     };
   }, [active, message]);

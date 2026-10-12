@@ -262,7 +262,7 @@ function PaintEditor({
         {brushes.map((b) => (
           <label
             key={b.key}
-            className={`flex cursor-pointer items-center gap-2 rounded-md border px-3 py-1.5 text-sm ${
+            className={`flex cursor-pointer items-center gap-2 rounded-md border px-3 py-1.5 text-sm has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent-strong ${
               brush === b.brush ? 'border-accent-strong bg-surface-raised' : 'border-border'
             }`}
           >

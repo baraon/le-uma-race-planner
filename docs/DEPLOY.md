@@ -45,4 +45,8 @@ Migrations run automatically when the API starts.
 
 ## Backups
 
-Not set up yet (next step): nightly `pg_dump` to off-site storage, plus a tested restore.
+No automatic backups (owner's choice). For a manual one:
+
+```bash
+ssh root@<droplet> 'cd /opt/leuma && docker compose -f compose.prod.yaml exec -T db   sh -c "pg_dump -U \$POSTGRES_USER -d \$POSTGRES_DB --format=custom"' > leuma-$(date +%F).dump
+```

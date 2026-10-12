@@ -4,8 +4,10 @@ import { button, Card, ErrorText, Muted } from '../components/ui';
 import { acceptInvite, getInvitePreview } from '../lib/api';
 import { keys } from '../lib/queries';
 import { navigate } from '../lib/router';
+import { useDocumentTitle } from '../lib/title';
 
 export function InvitePage({ token }: { token: string }) {
+  useDocumentTitle('Group invite');
   const qc = useQueryClient();
   const preview = useQuery({
     queryKey: ['invite', token],

@@ -19,6 +19,7 @@ import { formatDuration } from '../lib/format';
 import { keys, useGroup, useGroupEvents, useGroupMutation, useInvites } from '../lib/queries';
 import { navigate } from '../lib/router';
 import { viewerTimeZone } from '../lib/session';
+import { useDocumentTitle } from '../lib/title';
 
 const permissionLabels: Record<Permission, string> = {
   manageMembers: 'Members & invites',
@@ -29,6 +30,7 @@ const permissionLabels: Record<Permission, string> = {
 
 export function GroupPage({ groupId, me }: { groupId: string; me: Me }) {
   const group = useGroup(groupId);
+  useDocumentTitle(group.data?.name);
 
   if (group.isPending) return <Muted>Loading…</Muted>;
   if (group.error) return <ErrorText error={group.error} />;

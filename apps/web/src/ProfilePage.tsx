@@ -9,8 +9,10 @@ import { useState } from 'react';
 import { TimeZoneSelect } from './components/TimeZoneSelect';
 import { useUpdateMe, viewerTimeZone } from './lib/session';
 import { Avatar } from './UserMenu';
+import { useDocumentTitle } from './lib/title';
 
 export function ProfilePage({ me }: { me: Me }) {
+  useDocumentTitle('Profile');
   const saved = viewerTimeZone(me);
   const [zone, setZone] = useState(saved);
   const update = useUpdateMe();

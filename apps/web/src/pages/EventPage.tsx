@@ -16,6 +16,7 @@ import { useEvent, useGroup, useInvalidateEvents } from '../lib/queries';
 import { navigate } from '../lib/router';
 import { viewerTimeZone } from '../lib/session';
 import { AvailabilitySection } from './AvailabilityEditor';
+import { PaceCard } from './PaceCard';
 import { useDocumentTitle } from '../lib/title';
 
 function raceWindow(e: RaceEvent) {
@@ -131,6 +132,7 @@ export function EventPage({ eventId, me }: { eventId: string; me: Me }) {
       <ErrorText error={remove.error} />
 
       {group.data && <AvailabilitySection event={e} group={group.data} me={me} />}
+      {group.data && <PaceCard event={e} group={group.data} me={me} />}
     </>
   );
 }

@@ -13,6 +13,7 @@ import { healthRoutes, type DbPing } from './routes/health';
 import { HttpError, sendHttpError } from './routes/http';
 import { inviteRoutes } from './routes/invites';
 import { meRoutes } from './routes/me';
+import { paceRoutes } from './routes/pace';
 import { teamRoutes } from './routes/teams';
 
 export interface AppDeps {
@@ -83,6 +84,7 @@ export async function buildApp({ config, pingDb, db, discord = null, logger }: A
       teamRoutes,
       eventRoutes,
       availabilityRoutes,
+      paceRoutes,
     ]) {
       await app.register(routes, { prefix: '/api', db });
     }

@@ -153,3 +153,19 @@ export const availability = pgTable('availability', {
   updatedBy: uuid('updated_by').references(() => users.id, { onDelete: 'set null' }),
   updatedAt: instant('updated_at').notNull().defaultNow(),
 });
+
+export const driverPace = pgTable('driver_pace', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  track: text('track').notNull(),
+  trackKey: text('track_key').notNull(),
+  carClass: text('car_class').notNull(),
+  classKey: text('class_key').notNull(),
+  fuelUnit: text('fuel_unit', { enum: ['percent', 'litres'] }).notNull(),
+  lapMs: integer('lap_ms').notNull(),
+  consumptionPerLap: doublePrecision('consumption_per_lap').notNull(),
+  updatedBy: uuid('updated_by').references(() => users.id, { onDelete: 'set null' }),
+  updatedAt: instant('updated_at').notNull().defaultNow(),
+});

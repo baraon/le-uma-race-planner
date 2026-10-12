@@ -11,6 +11,7 @@ export const keys = {
   upcoming: ['events', 'upcoming'] as const,
   event: (id: string) => ['event', id] as const,
   availability: (eventId: string) => ['event', eventId, 'availability'] as const,
+  pace: (eventId: string) => ['event', eventId, 'pace'] as const,
 };
 
 export const useGroups = () => useQuery({ queryKey: keys.groups, queryFn: api.getGroups });
@@ -24,6 +25,8 @@ export const useEvent = (id: string) =>
   useQuery({ queryKey: keys.event(id), queryFn: () => api.getEvent(id) });
 export const useAvailability = (eventId: string) =>
   useQuery({ queryKey: keys.availability(eventId), queryFn: () => api.getAvailability(eventId) });
+export const usePace = (eventId: string) =>
+  useQuery({ queryKey: keys.pace(eventId), queryFn: () => api.getPace(eventId) });
 export const useInvites = (groupId: string, enabled: boolean) =>
   useQuery({ queryKey: keys.invites(groupId), queryFn: () => api.getInvites(groupId), enabled });
 

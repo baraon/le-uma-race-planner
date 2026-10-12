@@ -196,6 +196,22 @@ export const availabilityRowSchema = z.object({
   updatedBy: uuid.nullable(),
 });
 
+/** A driver's pace for the event's track, class and fuel unit (from their reusable profile). */
+export const paceRowSchema = z.object({
+  userId: uuid,
+  lapMs: z.number().int(),
+  consumptionPerLap: z.number(),
+  updatedAt: z.string().datetime(),
+  updatedBy: uuid.nullable(),
+});
+
+export const savePaceSchema = z
+  .object({
+    lapMs: z.number().int().min(10_000).max(1_800_000),
+    consumptionPerLap: z.number().positive().max(1000),
+  })
+  .strict();
+
 export type SaveAvailability = z.infer<typeof saveAvailabilitySchema>;
 export type HealthResponse = z.infer<typeof healthResponseSchema>;
 export type Me = z.infer<typeof meSchema>;
@@ -214,3 +230,5 @@ export type InvitePreview = z.infer<typeof invitePreviewSchema>;
 export type EventInput = z.input<typeof eventInputSchema>;
 export type RaceEvent = z.infer<typeof eventSchema>;
 export type AvailabilityRow = z.infer<typeof availabilityRowSchema>;
+export type PaceRow = z.infer<typeof paceRowSchema>;
+export type SavePace = z.infer<typeof savePaceSchema>;

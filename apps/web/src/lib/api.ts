@@ -1,5 +1,6 @@
 import {
   availabilityRowSchema,
+  paceRowSchema,
   createdInviteSchema,
   eventSchema,
   groupDetailSchema,
@@ -11,6 +12,7 @@ import {
   type EventInput,
   type Me,
   type Permissions,
+  type SavePace,
   type SlotBlock,
   type UpdateMe,
 } from '@le-uma/shared';
@@ -137,3 +139,11 @@ export const saveAvailability = (eventId: string, userId: string, blocks: SlotBl
       blocks,
     },
   );
+
+// Driver pace (per event's track, class and fuel unit)
+export const getPace = (eventId: string) =>
+  request('GET', `/api/events/${eventId}/pace`, parseWith(z.array(paceRowSchema)));
+export const savePace = (eventId: string, userId: string, pace: SavePace) =>
+  request('PUT', `/api/events/${eventId}/pace/${userId}`, parseWith(paceRowSchema), pace);
+export const deletePace = (eventId: string, userId: string) =>
+  request('DELETE', `/api/events/${eventId}/pace/${userId}`, ignore);

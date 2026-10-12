@@ -169,8 +169,9 @@ export function PrivacyPage() {
               </>,
               <>
                 <strong>Planning data:</strong> groups you create or join, your role and
-                permissions, teams you join, events, and the availability you (or a group admin)
-                mark.
+                permissions, teams you join, events, the availability you (or a group admin) mark,
+                and the race pace you (or an event manager) enter: lap time and fuel or energy use
+                per lap, saved per track and car class.
               </>,
               <>
                 <strong>Sessions:</strong> when you sign in, your browser gets a random session
@@ -188,7 +189,7 @@ export function PrivacyPage() {
         <Section title="Who can see it">
           <List
             items={[
-              'Members of a group you’re in can see your Discord name, avatar and timezone, the group’s teams and events, and the availability of drivers on those teams.',
+              'Members of a group you’re in can see your Discord name, avatar and timezone, the group’s teams and events, and the availability and race pace of drivers on those teams.',
               'Group owners and admins can manage the group, and admins with permission can edit availability.',
               'People outside your groups can’t see any of this.',
               'I (the operator) can access the database to run and fix the service, and look only when needed.',

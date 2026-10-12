@@ -43,8 +43,8 @@ export function TermsPage() {
           <p>
             Le Uma Race Planner (&ldquo;the service&rdquo;, at leumaplanner.com) is a free hobby
             project run by one person, Baraon (&ldquo;I&rdquo;, &ldquo;me&rdquo;), for a group of
-            friends who race together in Le Mans Ultimate. It lets drivers mark when they can race
-            and see each other&apos;s availability in their own timezone.
+            friends who race endurance events together in sim racing. It lets drivers mark when they
+            can race and see each other&apos;s availability in their own timezone.
           </p>
           <p>
             By signing in, you agree to these terms and to the{' '}
@@ -99,9 +99,9 @@ export function TermsPage() {
 
         <Section title="Not affiliated">
           <p>
-            This is an unofficial fan project. It is not affiliated with or endorsed by Le Mans
-            Ultimate, Motorsport Games, Studio 397, the Automobile Club de l&apos;Ouest (ACO), the
-            24 Hours of Le Mans, or Discord. Their names and trademarks belong to their owners.
+            This is an unofficial fan project. It is not affiliated with or endorsed by the
+            Automobile Club de l&apos;Ouest (ACO), the 24 Hours of Le Mans, any racing game or its
+            publisher, or Discord. Their names and trademarks belong to their owners.
           </p>
         </Section>
 
@@ -198,12 +198,12 @@ export function PrivacyPage() {
           <List
             items={[
               <>
-                <code>lmu_session</code>: keeps you signed in. Secure, http-only (scripts can&apos;t
-                read it), expires after 30 days without use.
+                <code>le_uma_session</code>: keeps you signed in. Secure, http-only (scripts
+                can&apos;t read it), expires after 30 days without use.
               </>,
               <>
-                <code>lmu_oauth_state</code>: protects the Discord sign-in against forgery. Lasts 10
-                minutes.
+                <code>le_uma_oauth_state</code>: protects the Discord sign-in against forgery. Lasts
+                10 minutes.
               </>,
             ]}
           />
@@ -287,7 +287,7 @@ export function LegalFooter() {
       <AppLink to="/privacy" className="hover:text-text">
         Privacy Policy
       </AppLink>
-      <span>A free, non-commercial fan project. Not affiliated with Le Mans Ultimate.</span>
+      <span>A free, non-commercial fan project.</span>
     </footer>
   );
 }

@@ -11,7 +11,7 @@ import { createSession, deleteSession } from '../auth/sessions';
 import { upsertDiscordUser } from '../auth/users';
 import type { Db } from '../db/client';
 
-const STATE_COOKIE = 'lmu_oauth_state';
+const STATE_COOKIE = 'le_uma_oauth_state';
 const STATE_TTL_SECONDS = 10 * 60;
 
 /** Login and logout are cheap to abuse; keep them well under the global limit. */

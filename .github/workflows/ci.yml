@@ -44,6 +44,9 @@ jobs:
         run: |
           if [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile; else pnpm install; fi
 
+      - name: Audit dependencies (fail on high or critical advisories)
+        run: pnpm audit --audit-level high
+
       - name: Lint
         run: pnpm lint
 

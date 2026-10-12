@@ -31,8 +31,9 @@ Owner: Baraon (GitHub `baraon`), based in America/Chicago, develops on Windows.
   `apps/web/src/pages/AvailabilityOverview.tsx`; axis marks (midnight, clock changes) in
   `packages/shared/src/timeline.ts`. Next: accessibility pass, then deploy.
 - A Discord application exists; its client ID/secret are in the owner's local `.env` only.
-- Production domain: **not decided.** Hosting: the owner's NVIDIA DGX Spark (ARM64 Linux) with
-  Docker Compose; how it's exposed publicly (tunnel or port forward) is not decided.
+- Production: **https://leumaplanner.com** (registered and DNS at Squarespace). First host: a
+  DigitalOcean $6/month droplet running `compose.prod.yaml`; runbook in `docs/DEPLOY.md`. The
+  owner's DGX Spark (ARM64) behind a Cloudflare Tunnel is a possible $0 move later.
 
 ## Non-negotiable rules
 
@@ -131,6 +132,5 @@ Run `pnpm format` before committing; CI fails on Prettier differences.
 
 ## Open items
 
-- Production domain (needed before first deploy; also add its redirect URI in Discord).
-- How the DGX Spark is reached from the internet (tunnel vs port forward).
+- Nightly database backups with a tested restore (Phase 4).
 - Decide whether Dependabot should be limited to minor/patch updates if PR volume is annoying.

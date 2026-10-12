@@ -74,6 +74,41 @@ production Dockerfiles and Caddy, sample timeline with timezone switcher on the 
   skipped by the owner's choice; `docs/DEPLOY.md` has the manual `pg_dump` command.
 - Terms of Service and Privacy Policy published (`/terms`, `/privacy`).
 
+### Phase 5 — Stint planner (next)
+
+Inspired by the team's 24 h stint spreadsheet; every number is an editable variable (CLAUDE.md
+rule 6), the spreadsheet's figures are at most starting defaults.
+
+- Track list in shared code: name, timezone, default pit-lane time loss (editable per event).
+- Race strategy settings per event: fuel measured as energy % or litres, usable capacity, full
+  refuel time, pit-lane time loss.
+- Pace profiles per driver × track × car class: race lap time and consumption per lap. Drivers
+  enter their own; managers can edit anyone's. Missing values fall back to the team average and
+  are flagged "estimated".
+- Stint lineup per event: ordered stints with driver and spotter; per-stint overrides for laps,
+  lap time and extra pit time. Laps per stint = whole laps the tank allows; stint length = laps ×
+  lap time; pit stop = pit-lane loss + refuel time for the fuel added + extra. Times shown in each
+  viewer's zone; the last stint ends at the flag.
+- Availability conflicts: flag stints whose driver or spotter is Not available / Maybe / no
+  answer in that window. Driving-time fairness per driver (stints, laps, minutes). Projected laps.
+- Privacy policy covers pace data.
+- **Done when:** a manager builds a 24 h lineup from drivers' own pace numbers and sees exact
+  stint times, conflicts and driving time per driver.
+
+### Phase 6 — Pit stops, tyres and game clock
+
+- Tyre allocation (sets available, used in qualifying), per-stop tyre changes per corner
+  (new / used / no change), seconds per tyre change, remaining-tyre warnings.
+- Per-stint pace adjustments (night, rain, worn tyres).
+- In-game start time and time scale: track time of day per stint.
+
+### Phase 7 — Race day and extras
+
+- Live mode: countdown, who's driving / next, enter actual pit laps and repair time, re-plan the
+  rest; optionally refine driver averages from real laps.
+- Stint notes and per-driver setup preferences shown to the next driver.
+- Auto-suggested lineup from availability and fairness. Export (print / CSV / Discord text).
+
 ## Required timezone test cases (keep these passing)
 
 Same availability rendered under `America/Chicago`, `Europe/Berlin`, `Australia/Sydney`,

@@ -5,6 +5,7 @@
 import { z } from 'zod';
 import { AVAILABILITY_STATUSES, blocksOverlap } from './slots';
 import { isValidTimeZone } from './timezones';
+import { FUEL_UNITS, STRATEGY_DEFAULTS } from './tracks';
 
 export const timeZoneSchema = z
   .string()
@@ -159,6 +160,11 @@ export const eventInputSchema = z
       .max(20)
       .nullish()
       .transform((v) => v ?? null),
+    // Strategy settings (all editable; omitted values take the starting defaults).
+    fuelUnit: z.enum(FUEL_UNITS).default(STRATEGY_DEFAULTS.fuelUnit),
+    fuelCapacity: z.number().positive().max(1000).default(STRATEGY_DEFAULTS.fuelCapacity),
+    refuelSeconds: z.number().min(0).max(600).default(STRATEGY_DEFAULTS.refuelSeconds),
+    pitLaneLossSeconds: z.number().min(0).max(300).default(STRATEGY_DEFAULTS.pitLaneLossSeconds),
   })
   .strict();
 
@@ -175,6 +181,10 @@ export const eventSchema = z.object({
   carClass: z.string().nullable(),
   trackTimezone: z.string().nullable(),
   minDrivers: z.number().int().nullable(),
+  fuelUnit: z.enum(FUEL_UNITS),
+  fuelCapacity: z.number(),
+  refuelSeconds: z.number(),
+  pitLaneLossSeconds: z.number(),
 });
 
 /** One driver's saved availability for an event, as slot blocks counted from the green flag. */

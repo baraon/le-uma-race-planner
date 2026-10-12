@@ -74,7 +74,7 @@ production Dockerfiles and Caddy, sample timeline with timezone switcher on the 
   skipped by the owner's choice; `docs/DEPLOY.md` has the manual `pg_dump` command.
 - Terms of Service and Privacy Policy published (`/terms`, `/privacy`).
 
-### Phase 5 — Stint planner (next)
+### Phase 5 — Stint planner (built; awaiting owner check)
 
 Inspired by the team's 24 h stint spreadsheet; every number is an editable variable (CLAUDE.md
 rule 6), the spreadsheet's figures are at most starting defaults.

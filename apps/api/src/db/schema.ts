@@ -169,3 +169,17 @@ export const driverPace = pgTable('driver_pace', {
   updatedBy: uuid('updated_by').references(() => users.id, { onDelete: 'set null' }),
   updatedAt: instant('updated_at').notNull().defaultNow(),
 });
+
+export const stints = pgTable('stints', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  eventId: uuid('event_id')
+    .notNull()
+    .references(() => events.id, { onDelete: 'cascade' }),
+  position: integer('position').notNull(),
+  driverId: uuid('driver_id').references(() => users.id, { onDelete: 'set null' }),
+  spotterId: uuid('spotter_id').references(() => users.id, { onDelete: 'set null' }),
+  lapsOverride: integer('laps_override'),
+  lapMsOverride: integer('lap_ms_override'),
+  extraPitSeconds: doublePrecision('extra_pit_seconds').notNull().default(0),
+  notes: text('notes'),
+});

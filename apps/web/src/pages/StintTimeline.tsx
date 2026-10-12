@@ -17,9 +17,9 @@ import {
   type Stint,
   type UserSummary,
 } from '@le-uma/shared';
-import { useState } from 'react';
+import { stintStatus } from '../components/StintStatus';
 import { TimeAxis } from '../components/Timeline';
-import { button, Card } from '../components/ui';
+import { Card } from '../components/ui';
 import { useNow } from '../lib/now';
 
 const nameOf = (u: UserSummary) => u.displayName ?? u.username;
@@ -47,7 +47,6 @@ export function StintTimeline({
   paintOf: (userId: string) => Paint;
   zone: string;
 }) {
-  const [pinned, setPinned] = useState(false);
   const now = useNow();
   const start = w.startsAt.getTime();
   const total = eventEnd(w).getTime() - start;
@@ -67,21 +66,8 @@ export function StintTimeline({
     `Stint ${s.index + 1}: ${formatSlotLabel(s.start, zone)}–${formatSlotLabel(s.end, zone, localDayChanged(s.start, s.end, zone))} ${zoneAbbreviation(s.start, zone)}, ${formatStintLength(s.end.getTime() - s.start.getTime())}`;
 
   return (
-    <div className={pinned ? 'sticky top-0 z-20 shadow-2xl' : undefined}>
-      <Card
-        title="Stint timeline"
-        action={
-          <button
-            type="button"
-            className={button.secondary}
-            aria-pressed={pinned}
-            onClick={() => setPinned((p) => !p)}
-            title="Keep the timeline on screen while scrolling the stint plan"
-          >
-            <span aria-hidden>📌</span> {pinned ? 'Unpin' : 'Pin'}
-          </button>
-        }
-      >
+    <div className="lg:sticky lg:top-2 lg:z-20 lg:shadow-2xl">
+      <Card title="Stint timeline">
         {running.length === 0 ? (
           <p className="text-sm text-text-muted">
             The timeline appears once the plan has timed stints.
@@ -160,8 +146,7 @@ export function StintTimeline({
                                     : 'bg-accent'
                                 } ${s.estimated ? 'border border-dashed border-white/60' : ''} hover:brightness-110`}
                               >
-                                {conflict && <span aria-hidden>⚠</span>}
-                                <span aria-hidden>{s.index + 1}</span>
+                                {conflict && <span aria-hidden>{stintStatus[check].glyph}</span>}
                               </a>
                             </li>
                           );
@@ -185,7 +170,7 @@ export function StintTimeline({
             )}
             <ul className="mt-4 flex flex-wrap gap-4 text-xs text-text-muted">
               <li className="flex items-center gap-1.5">
-                <span className="h-3 w-5 rounded-sm bg-accent" aria-hidden /> Stint (number = order)
+                <span className="h-3 w-5 rounded-sm bg-accent" aria-hidden /> Stint
               </li>
               <li className="flex items-center gap-1.5">
                 <span className="h-3 w-1 rounded-sm bg-accent-strong" aria-hidden /> Pit stop
@@ -195,7 +180,7 @@ export function StintTimeline({
                   className="h-3 w-5 rounded-sm bg-accent/70 ring-2 ring-unavailable ring-inset"
                   aria-hidden
                 />
-                ⚠ Driver not available / maybe / no answer
+                ✕ driver not available · ⚠ maybe or no answer
               </li>
               <li className="flex items-center gap-1.5">
                 <span

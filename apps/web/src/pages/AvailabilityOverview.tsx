@@ -15,14 +15,7 @@ import {
   type RaceEvent,
   type UserSummary,
 } from '@le-uma/shared';
-import {
-  Fragment,
-  useEffect,
-  useState,
-  type KeyboardEvent,
-  type PointerEvent,
-  type ReactNode,
-} from 'react';
+import { Fragment, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
 import { slotClass, statusLabel } from '../components/status';
 import {
   describeMarks,
@@ -33,19 +26,10 @@ import {
 } from '../components/Timeline';
 import { Card, Muted } from '../components/ui';
 import { Avatar } from '../UserMenu';
+import { useNow } from '../lib/now';
 import { rowsFor } from '../lib/paint';
 
 const nameOf = (u: UserSummary) => u.displayName ?? u.username;
-
-/** The current time, refreshed every minute (for the "now" marker). */
-function useNow(): Date {
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 60_000);
-    return () => clearInterval(id);
-  }, []);
-  return now;
-}
 
 interface ZoneOption {
   zone: string;

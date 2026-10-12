@@ -31,11 +31,14 @@ import {
 } from '@le-uma/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactNode } from 'react';
+import { DisplayMenu } from '../components/DisplayMenu';
 import { button, Card, ErrorText, input, Muted } from '../components/ui';
 import { saveStints } from '../lib/api';
 import { keys, useAvailability, usePace, useStints } from '../lib/queries';
 import { useNavigationGuard } from '../lib/router';
+import { resolveZone, useStintDisplay, zoneChoices } from '../lib/stintDisplay';
 import { viewerTimeZone } from '../lib/session';
+import { StintTimeline } from './StintTimeline';
 
 const nameOf = (u: UserSummary) => u.displayName ?? u.username;
 const blank = (driverId: string | null): Stint => ({
@@ -130,7 +133,8 @@ function StintPlanEditor({
     setVersion((v) => v + 1);
   };
   const qc = useQueryClient();
-  const zone = viewerTimeZone(me);
+  const [display, setDisplay] = useStintDisplay();
+  const col = display.columns;
   const canEdit = group.permissions.manageEvents;
   const dirty = JSON.stringify(draft) !== JSON.stringify(saved);
   useNavigationGuard(dirty, 'You have unsaved changes to the stint plan. Leave without saving?');
@@ -144,6 +148,9 @@ function StintPlanEditor({
     .map((id) => group.members.find((m) => m.user.id === id)?.user)
     .filter((u): u is UserSummary => u !== undefined);
   const people = new Map(group.members.map((m) => [m.user.id, m.user]));
+  const zoneOptions = zoneChoices(me, event, drivers);
+  const zone = resolveZone(display.zone, zoneOptions, viewerTimeZone(me));
+  const fuelUnit = event.fuelUnit === 'percent' ? '%' : 'L';
   const paceById = new Map<string, Pace>(paceRows.map((p) => [p.userId, p]));
   const average = averagePace([...paceById.values()]);
   const count = slotCount(w);
@@ -232,347 +239,408 @@ function StintPlanEditor({
   }
 
   return (
-    <Card
-      title="Stint plan"
-      action={
-        canEdit && (
+    <>
+      <StintTimeline
+        w={w}
+        plan={plan}
+        stints={draft}
+        drivers={drivers}
+        people={people}
+        paintOf={paintOf}
+        zone={zone}
+      />
+      <Card
+        title="Stint plan"
+        action={
           <div className="flex flex-wrap gap-2">
-            <button type="button" className={button.secondary} onClick={addStint}>
-              Add stint
-            </button>
-            <button type="button" className={button.secondary} onClick={fillToFlag}>
-              Fill to the flag
-            </button>
-          </div>
-        )
-      }
-    >
-      <div className="flex flex-col gap-4">
-        {summary}
-
-        {draft.length > 0 && (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[820px] text-left text-sm">
-              <thead className="text-xs text-text-muted">
-                <tr>
-                  <th className="py-2 pr-2 font-normal">#</th>
-                  <th className="py-2 pr-2 font-normal">Driver</th>
-                  <th className="py-2 pr-2 font-normal">Spotter</th>
-                  <th className="py-2 pr-2 font-normal">Laps</th>
-                  <th className="py-2 pr-2 font-normal">Lap</th>
-                  <th className="py-2 pr-2 font-normal">
-                    Time ({zoneAbbreviation(w.startsAt, zone)})
-                  </th>
-                  <th className="py-2 pr-2 font-normal">Stop after</th>
-                  <th className="py-2 pr-2 font-normal">Checks</th>
-                  {canEdit && (
-                    <th className="py-2 font-normal">
-                      <span className="sr-only">Actions</span>
-                    </th>
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {draft.map((s, i) => {
-                  const p: PlannedStint | undefined = plan.stints[i];
-                  const driver = s.driverId ? people.get(s.driverId) : undefined;
-                  const driverCheck =
-                    p && s.driverId && !p.afterFlag
-                      ? availabilityDuring(w, paintOf(s.driverId), p.start, p.end)
-                      : 'ok';
-                  const spotterCheck =
-                    p && s.spotterId && !p.afterFlag
-                      ? availabilityDuring(w, paintOf(s.spotterId), p.start, p.end)
-                      : 'ok';
-                  return (
-                    <tr
-                      key={`${version}-${i}`}
-                      className={`border-t border-border align-middle ${p?.afterFlag ? 'opacity-50' : ''}`}
-                    >
-                      <td className="py-2 pr-2 tabular-nums text-text-muted">{i + 1}</td>
-                      <td className="py-2 pr-2">
-                        {canEdit ? (
-                          <select
-                            value={s.driverId ?? ''}
-                            onChange={(e) => update(i, { driverId: e.target.value || null })}
-                            aria-label={`Driver for stint ${i + 1}`}
-                            className={`${input} w-32 py-1`}
-                          >
-                            <option value="">Unassigned</option>
-                            {drivers.map((d) => (
-                              <option key={d.id} value={d.id}>
-                                {nameOf(d)}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
-                          <span className="font-medium">
-                            {driver ? nameOf(driver) : 'Unassigned'}
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-2 pr-2">
-                        {canEdit ? (
-                          <select
-                            value={s.spotterId ?? ''}
-                            onChange={(e) => update(i, { spotterId: e.target.value || null })}
-                            aria-label={`Spotter for stint ${i + 1}`}
-                            className={`${input} w-28 py-1`}
-                          >
-                            <option value="">None</option>
-                            {group.members.map((m) => (
-                              <option key={m.user.id} value={m.user.id}>
-                                {nameOf(m.user)}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
-                          <span className="text-text-muted">
-                            {s.spotterId && people.get(s.spotterId)
-                              ? nameOf(people.get(s.spotterId)!)
-                              : '—'}
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-2 pr-2">
-                        {canEdit ? (
-                          <input
-                            type="number"
-                            min={1}
-                            max={1000}
-                            value={s.lapsOverride ?? ''}
-                            placeholder={p ? String(p.laps) : ''}
-                            onChange={(e) =>
-                              update(i, {
-                                lapsOverride: e.target.value
-                                  ? Math.max(1, Math.round(Number(e.target.value)))
-                                  : null,
-                              })
-                            }
-                            aria-label={`Laps for stint ${i + 1} (leave empty to use the calculated value)`}
-                            className={`${input} w-14 py-1`}
-                          />
-                        ) : (
-                          <span className="tabular-nums">{p?.laps ?? '—'}</span>
-                        )}
-                      </td>
-                      <td className="py-2 pr-2">
-                        {canEdit ? (
-                          <LapOverride
-                            value={s.lapMsOverride}
-                            placeholder={p ? formatLapTime(p.lapMs) : ''}
-                            label={`Lap time for stint ${i + 1} (leave empty to use the driver's pace)`}
-                            onChange={(ms) => update(i, { lapMsOverride: ms })}
-                          />
-                        ) : (
-                          <span className="tabular-nums">{p ? formatLapTime(p.lapMs) : '—'}</span>
-                        )}
-                      </td>
-                      <td className="py-2 pr-2 whitespace-nowrap tabular-nums">
-                        {p ? (
-                          <span
-                            title={
-                              driver?.timezone
-                                ? `${nameOf(driver)}: ${formatSlotLabel(p.start, driver.timezone)}–${formatSlotLabel(p.end, driver.timezone, localDayChanged(p.start, p.end, driver.timezone))} ${zoneAbbreviation(p.start, driver.timezone)}`
-                                : undefined
-                            }
-                          >
-                            {timeLabel(p.start)} → {timeLabel(p.end, p.start)}
-                            <span className="block text-[11px] text-text-muted">
-                              {formatStintLength(p.end.getTime() - p.start.getTime())}
-                            </span>
-                          </span>
-                        ) : (
-                          '—'
-                        )}
-                      </td>
-                      <td className="py-2 pr-2 whitespace-nowrap tabular-nums">
-                        {p && p.pitMs > 0 ? `${(p.pitMs / 1000).toFixed(1)} s` : '—'}
-                        {canEdit && p && !p.afterFlag && !p.endsAtFlag && i < draft.length - 1 && (
-                          <label className="mt-1 flex items-center gap-1 text-[11px] text-text-muted">
-                            +
-                            <input
-                              type="number"
-                              min={0}
-                              max={3600}
-                              step="any"
-                              value={s.extraPitSeconds || ''}
-                              placeholder="0"
-                              onChange={(e) =>
-                                update(i, {
-                                  extraPitSeconds: Math.max(0, Number(e.target.value) || 0),
-                                })
-                              }
-                              aria-label={`Extra seconds in the stop after stint ${i + 1}`}
-                              className={`${input} w-14 px-1.5 py-0.5 text-[11px]`}
-                            />
-                            s extra
-                          </label>
-                        )}
-                      </td>
-                      <td className="py-2 pr-2">
-                        <div className="flex flex-wrap gap-1">
-                          {p?.afterFlag && (
-                            <Badge className="border-border text-text-muted">after the flag</Badge>
-                          )}
-                          {p?.endsAtFlag && (
-                            <Badge className="border-accent-strong/60 text-accent-strong">
-                              🏁 flag
-                            </Badge>
-                          )}
-                          {p?.estimated && (
-                            <Badge className="border-maybe/60 text-maybe">estimated pace</Badge>
-                          )}
-                          {driverCheck !== 'ok' && (
-                            <Badge className={conflictClass[driverCheck]}>
-                              <span aria-hidden>⚠ </span>driver: {conflictText[driverCheck]}
-                            </Badge>
-                          )}
-                          {spotterCheck !== 'ok' && (
-                            <Badge className={conflictClass[spotterCheck]}>
-                              <span aria-hidden>⚠ </span>spotter: {conflictText[spotterCheck]}
-                            </Badge>
-                          )}
-                          {s.notes && !canEdit && (
-                            <span className="text-xs text-text-muted">{s.notes}</span>
-                          )}
-                        </div>
-                        {canEdit && (
-                          <input
-                            value={s.notes ?? ''}
-                            maxLength={500}
-                            placeholder="Notes"
-                            onChange={(e) => update(i, { notes: e.target.value || null })}
-                            aria-label={`Notes for stint ${i + 1}`}
-                            className={`${input} mt-1 w-full min-w-28 px-2 py-0.5 text-xs`}
-                          />
-                        )}
-                      </td>
-                      {canEdit && (
-                        <td className="py-2 text-right whitespace-nowrap">
-                          <button
-                            type="button"
-                            className={`${button.link} inline-flex size-6 items-center justify-center`}
-                            disabled={i === 0}
-                            onClick={() => move(i, -1)}
-                            aria-label={`Move stint ${i + 1} up`}
-                          >
-                            ↑
-                          </button>{' '}
-                          <button
-                            type="button"
-                            className={`${button.link} inline-flex size-6 items-center justify-center`}
-                            disabled={i === draft.length - 1}
-                            onClick={() => move(i, 1)}
-                            aria-label={`Move stint ${i + 1} down`}
-                          >
-                            ↓
-                          </button>{' '}
-                          <button
-                            type="button"
-                            className={`${button.link} inline-flex size-6 items-center justify-center`}
-                            onClick={() => {
-                              setDraft((d) => d.filter((_, j) => j !== i));
-                              save.reset();
-                            }}
-                            aria-label={`Remove stint ${i + 1}`}
-                            title="Remove"
-                          >
-                            ✕
-                          </button>
-                        </td>
-                      )}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {canEdit && (
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              className={button.primary}
-              disabled={!dirty || save.isPending}
-              onClick={() => save.mutate()}
-            >
-              {save.isPending ? 'Saving…' : 'Save plan'}
-            </button>
-            {dirty && (
-              <button type="button" className={button.link} onClick={() => setDraft(saved)}>
-                Undo changes
-              </button>
+            {canEdit && (
+              <>
+                <button type="button" className={button.secondary} onClick={addStint}>
+                  Add stint
+                </button>
+                <button type="button" className={button.secondary} onClick={fillToFlag}>
+                  Fill to the flag
+                </button>
+              </>
             )}
-            {draft.length > 0 && (
+            <DisplayMenu display={display} onChange={setDisplay} zones={zoneOptions} />
+          </div>
+        }
+      >
+        <div className="flex flex-col gap-4">
+          {summary}
+
+          {draft.length > 0 && (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[820px] text-left text-sm">
+                <thead className="text-xs text-text-muted">
+                  <tr>
+                    <th className="py-2 pr-2 font-normal">#</th>
+                    <th className="py-2 pr-2 font-normal">Driver</th>
+                    {col.spotter && <th className="py-2 pr-2 font-normal">Spotter</th>}
+                    {col.laps && <th className="py-2 pr-2 font-normal">Laps</th>}
+                    {col.lap && <th className="py-2 pr-2 font-normal">Lap</th>}
+                    {col.fuel && <th className="py-2 pr-2 font-normal">Fuel</th>}
+                    <th className="py-2 pr-2 font-normal">
+                      Time ({zoneAbbreviation(w.startsAt, zone)})
+                    </th>
+                    {col.driverTime && <th className="py-2 pr-2 font-normal">Driver time</th>}
+                    {col.pit && <th className="py-2 pr-2 font-normal">Stop after</th>}
+                    {col.checks && <th className="py-2 pr-2 font-normal">Checks</th>}
+                    {canEdit && (
+                      <th className="py-2 font-normal">
+                        <span className="sr-only">Actions</span>
+                      </th>
+                    )}
+                  </tr>
+                </thead>
+                <tbody>
+                  {draft.map((s, i) => {
+                    const p: PlannedStint | undefined = plan.stints[i];
+                    const driver = s.driverId ? people.get(s.driverId) : undefined;
+                    const driverCheck =
+                      p && s.driverId && !p.afterFlag
+                        ? availabilityDuring(w, paintOf(s.driverId), p.start, p.end)
+                        : 'ok';
+                    const spotterCheck =
+                      p && s.spotterId && !p.afterFlag
+                        ? availabilityDuring(w, paintOf(s.spotterId), p.start, p.end)
+                        : 'ok';
+                    return (
+                      <tr
+                        key={`${version}-${i}`}
+                        id={`stint-${i + 1}`}
+                        className={`scroll-mt-48 border-t border-border align-middle target:bg-accent/10 ${p?.afterFlag ? 'opacity-50' : ''}`}
+                      >
+                        <td className="py-2 pr-2 tabular-nums text-text-muted">{i + 1}</td>
+                        <td className="py-2 pr-2">
+                          {canEdit ? (
+                            <select
+                              value={s.driverId ?? ''}
+                              onChange={(e) => update(i, { driverId: e.target.value || null })}
+                              aria-label={`Driver for stint ${i + 1}`}
+                              className={`${input} w-32 py-1`}
+                            >
+                              <option value="">Unassigned</option>
+                              {drivers.map((d) => (
+                                <option key={d.id} value={d.id}>
+                                  {nameOf(d)}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <span className="font-medium">
+                              {driver ? nameOf(driver) : 'Unassigned'}
+                            </span>
+                          )}
+                        </td>
+                        {col.spotter && (
+                          <td className="py-2 pr-2">
+                            {canEdit ? (
+                              <select
+                                value={s.spotterId ?? ''}
+                                onChange={(e) => update(i, { spotterId: e.target.value || null })}
+                                aria-label={`Spotter for stint ${i + 1}`}
+                                className={`${input} w-28 py-1`}
+                              >
+                                <option value="">None</option>
+                                {group.members.map((m) => (
+                                  <option key={m.user.id} value={m.user.id}>
+                                    {nameOf(m.user)}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : (
+                              <span className="text-text-muted">
+                                {s.spotterId && people.get(s.spotterId)
+                                  ? nameOf(people.get(s.spotterId)!)
+                                  : '—'}
+                              </span>
+                            )}
+                          </td>
+                        )}
+                        {col.laps && (
+                          <td className="py-2 pr-2">
+                            {canEdit ? (
+                              <input
+                                type="number"
+                                min={1}
+                                max={1000}
+                                value={s.lapsOverride ?? ''}
+                                placeholder={p ? String(p.laps) : ''}
+                                onChange={(e) =>
+                                  update(i, {
+                                    lapsOverride: e.target.value
+                                      ? Math.max(1, Math.round(Number(e.target.value)))
+                                      : null,
+                                  })
+                                }
+                                aria-label={`Laps for stint ${i + 1} (leave empty to use the calculated value)`}
+                                className={`${input} w-14 py-1`}
+                              />
+                            ) : (
+                              <span className="tabular-nums">{p?.laps ?? '—'}</span>
+                            )}
+                          </td>
+                        )}
+                        {col.lap && (
+                          <td className="py-2 pr-2">
+                            {canEdit ? (
+                              <LapOverride
+                                value={s.lapMsOverride}
+                                placeholder={p ? formatLapTime(p.lapMs) : ''}
+                                label={`Lap time for stint ${i + 1} (leave empty to use the driver's pace)`}
+                                onChange={(ms) => update(i, { lapMsOverride: ms })}
+                              />
+                            ) : (
+                              <span className="tabular-nums">
+                                {p ? formatLapTime(p.lapMs) : '—'}
+                              </span>
+                            )}
+                          </td>
+                        )}
+                        {col.fuel && (
+                          <td className="py-2 pr-2 whitespace-nowrap tabular-nums">
+                            {p ? `${Number(p.fuelNeeded.toFixed(1))} ${fuelUnit}` : '—'}
+                          </td>
+                        )}
+                        <td className="py-2 pr-2 whitespace-nowrap tabular-nums">
+                          {p ? (
+                            <span
+                              title={
+                                driver?.timezone
+                                  ? `${nameOf(driver)}: ${formatSlotLabel(p.start, driver.timezone)}–${formatSlotLabel(p.end, driver.timezone, localDayChanged(p.start, p.end, driver.timezone))} ${zoneAbbreviation(p.start, driver.timezone)}`
+                                  : undefined
+                              }
+                            >
+                              {timeLabel(p.start)} → {timeLabel(p.end, p.start)}
+                              <span className="block text-[11px] text-text-muted">
+                                {formatStintLength(p.end.getTime() - p.start.getTime())}
+                              </span>
+                            </span>
+                          ) : (
+                            '—'
+                          )}
+                        </td>
+                        {col.driverTime && (
+                          <td className="py-2 pr-2 whitespace-nowrap tabular-nums">
+                            {p && driver?.timezone ? (
+                              <>
+                                {formatSlotLabel(p.start, driver.timezone)} →{' '}
+                                {formatSlotLabel(
+                                  p.end,
+                                  driver.timezone,
+                                  localDayChanged(p.start, p.end, driver.timezone),
+                                )}
+                                <span className="block text-[11px] text-text-muted">
+                                  {driver.timezone}
+                                </span>
+                              </>
+                            ) : (
+                              <span className="text-text-muted">—</span>
+                            )}
+                          </td>
+                        )}
+                        {col.pit && (
+                          <td className="py-2 pr-2 whitespace-nowrap tabular-nums">
+                            {p && p.pitMs > 0 ? `${(p.pitMs / 1000).toFixed(1)} s` : '—'}
+                            {canEdit &&
+                              p &&
+                              !p.afterFlag &&
+                              !p.endsAtFlag &&
+                              i < draft.length - 1 && (
+                                <label className="mt-1 flex items-center gap-1 text-[11px] text-text-muted">
+                                  +
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    max={3600}
+                                    step="any"
+                                    value={s.extraPitSeconds || ''}
+                                    placeholder="0"
+                                    onChange={(e) =>
+                                      update(i, {
+                                        extraPitSeconds: Math.max(0, Number(e.target.value) || 0),
+                                      })
+                                    }
+                                    aria-label={`Extra seconds in the stop after stint ${i + 1}`}
+                                    className={`${input} w-14 px-1.5 py-0.5 text-[11px]`}
+                                  />
+                                  s extra
+                                </label>
+                              )}
+                          </td>
+                        )}
+                        {col.checks && (
+                          <td className="py-2 pr-2">
+                            <div className="flex flex-wrap gap-1">
+                              {p?.afterFlag && (
+                                <Badge className="border-border text-text-muted">
+                                  after the flag
+                                </Badge>
+                              )}
+                              {p?.endsAtFlag && (
+                                <Badge className="border-accent-strong/60 text-accent-strong">
+                                  🏁 flag
+                                </Badge>
+                              )}
+                              {p?.estimated && (
+                                <Badge className="border-maybe/60 text-maybe">estimated pace</Badge>
+                              )}
+                              {driverCheck !== 'ok' && (
+                                <Badge className={conflictClass[driverCheck]}>
+                                  <span aria-hidden>⚠ </span>driver: {conflictText[driverCheck]}
+                                </Badge>
+                              )}
+                              {spotterCheck !== 'ok' && (
+                                <Badge className={conflictClass[spotterCheck]}>
+                                  <span aria-hidden>⚠ </span>spotter: {conflictText[spotterCheck]}
+                                </Badge>
+                              )}
+                              {s.notes && !canEdit && (
+                                <span className="text-xs text-text-muted">{s.notes}</span>
+                              )}
+                            </div>
+                            {canEdit && (
+                              <input
+                                value={s.notes ?? ''}
+                                maxLength={500}
+                                placeholder="Notes"
+                                onChange={(e) => update(i, { notes: e.target.value || null })}
+                                aria-label={`Notes for stint ${i + 1}`}
+                                className={`${input} mt-1 w-full min-w-28 px-2 py-0.5 text-xs`}
+                              />
+                            )}
+                          </td>
+                        )}
+                        {canEdit && (
+                          <td className="py-2 text-right whitespace-nowrap">
+                            <button
+                              type="button"
+                              className={`${button.link} inline-flex size-6 items-center justify-center`}
+                              disabled={i === 0}
+                              onClick={() => move(i, -1)}
+                              aria-label={`Move stint ${i + 1} up`}
+                            >
+                              ↑
+                            </button>{' '}
+                            <button
+                              type="button"
+                              className={`${button.link} inline-flex size-6 items-center justify-center`}
+                              disabled={i === draft.length - 1}
+                              onClick={() => move(i, 1)}
+                              aria-label={`Move stint ${i + 1} down`}
+                            >
+                              ↓
+                            </button>{' '}
+                            <button
+                              type="button"
+                              className={`${button.link} inline-flex size-6 items-center justify-center`}
+                              onClick={() => {
+                                setDraft((d) => d.filter((_, j) => j !== i));
+                                save.reset();
+                              }}
+                              aria-label={`Remove stint ${i + 1}`}
+                              title="Remove"
+                            >
+                              ✕
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {canEdit && (
+            <div className="flex flex-wrap items-center gap-3">
               <button
                 type="button"
-                className={button.link}
-                onClick={() => {
-                  setDraft([]);
-                  save.reset();
-                }}
+                className={button.primary}
+                disabled={!dirty || save.isPending}
+                onClick={() => save.mutate()}
               >
-                Clear plan
+                {save.isPending ? 'Saving…' : 'Save plan'}
               </button>
-            )}
-            <span aria-live="polite" className="text-sm">
-              {dirty ? (
-                <span className="text-maybe">● Unsaved changes</span>
-              ) : save.isSuccess ? (
-                <span className="text-available">✓ Saved</span>
-              ) : null}
-            </span>
-            <ErrorText error={save.error} />
-          </div>
-        )}
+              {dirty && (
+                <button type="button" className={button.link} onClick={() => setDraft(saved)}>
+                  Undo changes
+                </button>
+              )}
+              {draft.length > 0 && (
+                <button
+                  type="button"
+                  className={button.link}
+                  onClick={() => {
+                    setDraft([]);
+                    save.reset();
+                  }}
+                >
+                  Clear plan
+                </button>
+              )}
+              <span aria-live="polite" className="text-sm">
+                {dirty ? (
+                  <span className="text-maybe">● Unsaved changes</span>
+                ) : save.isSuccess ? (
+                  <span className="text-available">✓ Saved</span>
+                ) : null}
+              </span>
+              <ErrorText error={save.error} />
+            </div>
+          )}
 
-        {totals.length > 0 && (
-          <div>
-            <h3 className="mb-2 text-sm font-medium">Driving time</h3>
-            <table className="w-full max-w-xl text-left text-sm">
-              <thead className="text-xs text-text-muted">
-                <tr>
-                  <th className="py-1 pr-3 font-normal">Driver</th>
-                  <th className="py-1 pr-3 font-normal">Stints</th>
-                  <th className="py-1 pr-3 font-normal">Laps</th>
-                  <th className="py-1 pr-3 font-normal">Driving</th>
-                  <th className="py-1 font-normal">Share</th>
-                </tr>
-              </thead>
-              <tbody>
-                {totals.map((t) => {
-                  const share = totalDriving > 0 ? t.drivingMs / totalDriving : 0;
-                  const u = people.get(t.driverId);
-                  return (
-                    <tr key={t.driverId} className="border-t border-border">
-                      <td className="py-1.5 pr-3">{u ? nameOf(u) : 'Former member'}</td>
-                      <td className="py-1.5 pr-3 tabular-nums">{t.stints}</td>
-                      <td className="py-1.5 pr-3 tabular-nums">{t.laps}</td>
-                      <td className="py-1.5 pr-3 tabular-nums">{formatStintLength(t.drivingMs)}</td>
-                      <td className="py-1.5">
-                        <span className="flex items-center gap-2">
-                          <span className="h-2 w-24 rounded-full bg-surface-raised" aria-hidden>
-                            <span
-                              className="block h-2 rounded-full bg-accent"
-                              style={{ width: `${share * 100}%` }}
-                            />
+          {totals.length > 0 && (
+            <div>
+              <h3 className="mb-2 text-sm font-medium">Driving time</h3>
+              <table className="w-full max-w-xl text-left text-sm">
+                <thead className="text-xs text-text-muted">
+                  <tr>
+                    <th className="py-1 pr-3 font-normal">Driver</th>
+                    <th className="py-1 pr-3 font-normal">Stints</th>
+                    <th className="py-1 pr-3 font-normal">Laps</th>
+                    <th className="py-1 pr-3 font-normal">Driving</th>
+                    <th className="py-1 font-normal">Share</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {totals.map((t) => {
+                    const share = totalDriving > 0 ? t.drivingMs / totalDriving : 0;
+                    const u = people.get(t.driverId);
+                    return (
+                      <tr key={t.driverId} className="border-t border-border">
+                        <td className="py-1.5 pr-3">{u ? nameOf(u) : 'Former member'}</td>
+                        <td className="py-1.5 pr-3 tabular-nums">{t.stints}</td>
+                        <td className="py-1.5 pr-3 tabular-nums">{t.laps}</td>
+                        <td className="py-1.5 pr-3 tabular-nums">
+                          {formatStintLength(t.drivingMs)}
+                        </td>
+                        <td className="py-1.5">
+                          <span className="flex items-center gap-2">
+                            <span className="h-2 w-24 rounded-full bg-surface-raised" aria-hidden>
+                              <span
+                                className="block h-2 rounded-full bg-accent"
+                                style={{ width: `${share * 100}%` }}
+                              />
+                            </span>
+                            <span className="tabular-nums text-xs text-text-muted">
+                              {Math.round(share * 100)}%
+                            </span>
                           </span>
-                          <span className="tabular-nums text-xs text-text-muted">
-                            {Math.round(share * 100)}%
-                          </span>
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-    </Card>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </Card>
+    </>
   );
 }
 

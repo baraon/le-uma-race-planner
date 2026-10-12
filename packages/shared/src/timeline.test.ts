@@ -40,6 +40,17 @@ describe('axis marks', () => {
     expect(chicago.clockChanges).toEqual([{ slot: 12, deltaMinutes: -60, from: 'CDT', to: 'CST' }]);
   });
 
+  it('drops hour ticks that would collide with a midnight label', () => {
+    // Ticks every 2 h from 12:00 UTC land on odd hours in Chicago (07:00, 09:00, ...): the ticks
+    // at 23:00 and 01:00 sit one hour from the midnight label and are dropped.
+    const marks = axisMarks(leMans, 'America/Chicago');
+    const step = marks.ticks[1]!.slot - marks.ticks[0]!.slot;
+    for (const d of marks.days) {
+      for (const t of marks.ticks)
+        expect(Math.abs(t.slot - d.slot)).toBeGreaterThanOrEqual(step * 0.75);
+    }
+  });
+
   it('labels a sub-range of the race with its own first tick', () => {
     const marks = axisMarks(leMans, 'UTC', 24, 48);
     expect(marks.ticks.map((t) => t.label)).toEqual([

@@ -92,6 +92,9 @@ rule 6), the spreadsheet's figures are at most starting defaults.
 - Availability conflicts: flag stints whose driver or spotter is Not available / Maybe / no
   answer in that window. Driving-time fairness per driver (stints, laps, minutes). Projected laps.
 - Privacy policy covers pace data.
+- Stint timeline (one row per driver, blocks at exact times, pit-stop row, availability tinted
+  behind each row, blocks jump to their table row, pin to keep it on screen) and a Display menu
+  (table columns; timezone: browser / you / track / UTC / any teammate; saved per browser).
 - **Done when:** a manager builds a 24 h lineup from drivers' own pace numbers and sees exact
   stint times, conflicts and driving time per driver.
 
@@ -101,12 +104,14 @@ rule 6), the spreadsheet's figures are at most starting defaults.
   (new / used / no change), seconds per tyre change, remaining-tyre warnings.
 - Per-stint pace adjustments (night, rain, worn tyres).
 - In-game start time and time scale: track time of day per stint.
+- Display menu gains a "Sim time" column once the in-game clock exists.
 
 ### Phase 7 — Race day and extras
 
 - Live mode: countdown, who's driving / next, enter actual pit laps and repair time, re-plan the
   rest; optionally refine driver averages from real laps.
-- Stint notes and per-driver setup preferences shown to the next driver.
+- Stint notes and per-driver setup preferences shown to the next driver (a "Setup" column, like
+  the reference tool's dry / wet / eco). Weather is out of scope unless a data source appears.
 - Auto-suggested lineup from availability and fairness. Export (print / CSV / Discord text).
 
 ## Required timezone test cases (keep these passing)

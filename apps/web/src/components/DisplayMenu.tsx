@@ -15,10 +15,13 @@ export function DisplayMenu({
   display,
   onChange,
   zones,
+  zone,
 }: {
   display: StintDisplay;
   onChange: (next: StintDisplay) => void;
   zones: ZoneOption[];
+  /** The zone currently in effect (the saved choice, or the viewer's own). */
+  zone: string;
 }) {
   const [open, setOpen] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
@@ -42,8 +45,6 @@ export function DisplayMenu({
       document.removeEventListener('keydown', onKey);
     };
   }, [open]);
-
-  const zoneChoice = zones.some((z) => z.choice === display.zone) ? display.zone : zones[0]?.choice;
 
   return (
     <div ref={wrap} className="relative">
@@ -84,13 +85,13 @@ export function DisplayMenu({
               Timezone
             </legend>
             {zones.map((z) => (
-              <label key={z.choice} className="flex cursor-pointer items-start gap-2">
+              <label key={z.zone} className="flex cursor-pointer items-start gap-2">
                 <input
                   type="radio"
                   name="stint-zone"
                   className="mt-1"
-                  checked={zoneChoice === z.choice}
-                  onChange={() => onChange({ ...display, zone: z.choice })}
+                  checked={zone === z.zone}
+                  onChange={() => onChange({ ...display, zone: z.zone })}
                 />
                 <span>{z.label}</span>
               </label>

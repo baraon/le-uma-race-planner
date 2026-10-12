@@ -27,29 +27,10 @@ import {
 import { Card, Muted } from '../components/ui';
 import { Avatar } from '../UserMenu';
 import { useNow } from '../lib/now';
+import { zoneChoices } from '../lib/stintDisplay';
 import { rowsFor } from '../lib/paint';
 
 const nameOf = (u: UserSummary) => u.displayName ?? u.username;
-
-interface ZoneOption {
-  zone: string;
-  label: string;
-}
-
-/** You, UTC, the track, and every teammate's zone (merged when they coincide). */
-function zoneOptions(viewer: string, track: string | null, drivers: UserSummary[], me: string) {
-  const options = new Map<string, string[]>();
-  const add = (zone: string, label: string) =>
-    options.set(zone, [...(options.get(zone) ?? []), label]);
-  add(viewer, 'you');
-  if (track) add(track, 'track');
-  add('UTC', 'UTC');
-  for (const d of drivers) if (d.timezone && d.id !== me) add(d.timezone, nameOf(d));
-  return [...options].map(([zone, who]): ZoneOption => ({
-    zone,
-    label: zone === 'UTC' && who.length === 1 ? 'UTC' : `${zone} (${who.join(', ')})`,
-  }));
-}
 
 type Hover = { slot: number; userId: string | null } | null;
 
@@ -78,7 +59,7 @@ export function AvailabilityOverview({
   const gaps = coverageGaps(counts, needed);
   const rows = rowsFor(count);
   const perRow = rows[0]!.end;
-  const options = zoneOptions(viewerZone, event.trackTimezone, drivers, meId);
+  const options = zoneChoices({ id: meId, timezone: viewerZone }, event, drivers);
 
   const nowSlot =
     now >= w.startsAt && now < eventEnd(w)

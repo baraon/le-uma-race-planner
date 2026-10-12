@@ -26,12 +26,12 @@ import {
   type AvailabilityRow,
   type PaceRow,
   type Stint,
-  type StintAvailability,
   type UserSummary,
 } from '@le-uma/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { DisplayMenu } from '../components/DisplayMenu';
+import { StintStatusIcon } from '../components/StintStatus';
 import { button, Card, ErrorText, input, Muted } from '../components/ui';
 import { saveStints } from '../lib/api';
 import { keys, useAvailability, usePace, useStints } from '../lib/queries';
@@ -49,27 +49,6 @@ const blank = (driverId: string | null): Stint => ({
   extraPitSeconds: 0,
   notes: null,
 });
-
-const conflictText: Record<Exclude<StintAvailability, 'ok'>, string> = {
-  unavailable: 'Not available',
-  maybe: 'Maybe',
-  none: 'No answer',
-};
-const conflictClass: Record<Exclude<StintAvailability, 'ok'>, string> = {
-  unavailable: 'border-unavailable/70 text-unavailable',
-  maybe: 'border-maybe/70 text-maybe',
-  none: 'border-border text-text-muted',
-};
-
-function Badge({ className, children }: { className: string; children: ReactNode }) {
-  return (
-    <span
-      className={`rounded-full border px-1.5 py-0.5 text-[10px] whitespace-nowrap ${className}`}
-    >
-      {children}
-    </span>
-  );
-}
 
 export function StintPlanCard({
   event,
@@ -172,14 +151,33 @@ function StintPlanEditor({
     setDraftState((d) => d.map((s, j) => (j === i ? { ...s, ...patch } : s)));
     save.reset();
   };
-  const move = (i: number, by: -1 | 1) => {
+  const [drag, setDrag] = useState<{ from: number; over: number } | null>(null);
+  /** Screen-reader announcement after a reorder. */
+  const [moved, setMoved] = useState('');
+  const body = useRef<HTMLTableSectionElement>(null);
+  /** After a keyboard move, the handle to focus once the rows re-render. */
+  const focusHandle = useRef<number | null>(null);
+  const moveTo = (from: number, to: number) => {
+    if (to === from || to < 0 || to >= draft.length) return;
     setDraft((d) => {
       const next = [...d];
-      const [s] = next.splice(i, 1);
-      next.splice(i + by, 0, s!);
+      const [s] = next.splice(from, 1);
+      next.splice(to, 0, s!);
       return next;
     });
+    setMoved(`Stint ${from + 1} moved to position ${to + 1} of ${draft.length}`);
     save.reset();
+  };
+  useEffect(() => {
+    if (focusHandle.current === null) return;
+    body.current?.querySelector<HTMLElement>(`[data-handle="${focusHandle.current}"]`)?.focus();
+    focusHandle.current = null;
+  }, [version]);
+  /** The row under a pointer position (the last row when below the table). */
+  const rowAt = (clientY: number) => {
+    const rows = [...(body.current?.querySelectorAll('tr') ?? [])];
+    const at = rows.findIndex((r) => clientY < r.getBoundingClientRect().bottom);
+    return at === -1 ? Math.max(0, rows.length - 1) : at;
   };
   /** The next driver in team order after the last stint's driver. */
   const nextDriver = (list: Stint[]) => {
@@ -263,7 +261,7 @@ function StintPlanEditor({
                 </button>
               </>
             )}
-            <DisplayMenu display={display} onChange={setDisplay} zones={zoneOptions} />
+            <DisplayMenu display={display} onChange={setDisplay} zones={zoneOptions} zone={zone} />
           </div>
         }
       >
@@ -272,9 +270,14 @@ function StintPlanEditor({
 
           {draft.length > 0 && (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[820px] text-left text-sm">
+              <table className="w-full min-w-[760px] text-left text-sm">
                 <thead className="text-xs text-text-muted">
                   <tr>
+                    <th className="py-2 pr-2 font-normal">
+                      <span className="sr-only">
+                        {canEdit ? 'Reorder and driver status' : 'Driver status'}
+                      </span>
+                    </th>
                     <th className="py-2 pr-2 font-normal">#</th>
                     <th className="py-2 pr-2 font-normal">Driver</th>
                     {col.spotter && <th className="py-2 pr-2 font-normal">Spotter</th>}
@@ -286,32 +289,105 @@ function StintPlanEditor({
                     </th>
                     {col.driverTime && <th className="py-2 pr-2 font-normal">Driver time</th>}
                     {col.pit && <th className="py-2 pr-2 font-normal">Stop after</th>}
-                    {col.checks && <th className="py-2 pr-2 font-normal">Checks</th>}
                     {canEdit && (
                       <th className="py-2 font-normal">
-                        <span className="sr-only">Actions</span>
+                        <span className="sr-only">Remove</span>
                       </th>
                     )}
                   </tr>
                 </thead>
-                <tbody>
+                <tbody ref={body}>
                   {draft.map((s, i) => {
                     const p: PlannedStint | undefined = plan.stints[i];
                     const driver = s.driverId ? people.get(s.driverId) : undefined;
+                    const timed = p !== undefined && !p.afterFlag;
                     const driverCheck =
-                      p && s.driverId && !p.afterFlag
+                      timed && s.driverId
                         ? availabilityDuring(w, paintOf(s.driverId), p.start, p.end)
-                        : 'ok';
+                        : null;
                     const spotterCheck =
-                      p && s.spotterId && !p.afterFlag
+                      timed && s.spotterId
                         ? availabilityDuring(w, paintOf(s.spotterId), p.start, p.end)
-                        : 'ok';
+                        : null;
+                    const dropTarget = drag !== null && drag.over === i && drag.from !== i;
                     return (
                       <tr
                         key={`${version}-${i}`}
                         id={`stint-${i + 1}`}
-                        className={`scroll-mt-48 border-t border-border align-middle target:bg-accent/10 ${p?.afterFlag ? 'opacity-50' : ''}`}
+                        className={`scroll-mt-80 border-t border-border align-middle ${
+                          p?.afterFlag || drag?.from === i ? 'opacity-50' : ''
+                        } ${
+                          dropTarget
+                            ? drag.over < drag.from
+                              ? 'border-t-2 border-t-accent-strong'
+                              : 'border-b-2 border-b-accent-strong'
+                            : ''
+                        }`}
                       >
+                        <td className="py-2 pr-2 whitespace-nowrap">
+                          <span className="flex items-center gap-1">
+                            {canEdit && (
+                              <button
+                                type="button"
+                                data-handle={i}
+                                className="inline-flex size-6 cursor-grab touch-none items-center justify-center rounded text-lg leading-none text-text-muted hover:text-text active:cursor-grabbing"
+                                aria-label={`Reorder stint ${i + 1}: drag it, or press the up and down arrow keys`}
+                                title="Drag to reorder"
+                                onPointerDown={(e) => {
+                                  if (e.button !== 0) return;
+                                  e.preventDefault();
+                                  e.currentTarget.setPointerCapture(e.pointerId);
+                                  setDrag({ from: i, over: i });
+                                }}
+                                onPointerMove={(e) => {
+                                  if (!drag) return;
+                                  // Keep the list moving when dragging near the screen edges.
+                                  if (e.clientY < 80) window.scrollBy(0, -14);
+                                  else if (e.clientY > window.innerHeight - 80)
+                                    window.scrollBy(0, 14);
+                                  const over = rowAt(e.clientY);
+                                  if (over !== drag.over) setDrag({ ...drag, over });
+                                }}
+                                onPointerUp={() => {
+                                  if (!drag) return;
+                                  moveTo(drag.from, drag.over);
+                                  setDrag(null);
+                                }}
+                                onPointerCancel={() => setDrag(null)}
+                                onKeyDown={(e) => {
+                                  const to =
+                                    e.key === 'ArrowUp'
+                                      ? i - 1
+                                      : e.key === 'ArrowDown'
+                                        ? i + 1
+                                        : null;
+                                  if (to === null || to < 0 || to >= draft.length) return;
+                                  e.preventDefault();
+                                  focusHandle.current = to;
+                                  moveTo(i, to);
+                                }}
+                              >
+                                <span aria-hidden>⠿</span>
+                              </button>
+                            )}
+                            {driverCheck ? (
+                              <StintStatusIcon
+                                check={driverCheck}
+                                who={driver ? nameOf(driver) : 'Driver'}
+                              />
+                            ) : (
+                              <span
+                                className="inline-flex size-6 items-center justify-center text-text-muted"
+                                title={p?.afterFlag ? 'After the flag' : 'No driver assigned'}
+                              >
+                                <span aria-hidden>–</span>
+                                <span className="sr-only">
+                                  {p?.afterFlag ? 'After the flag' : 'No driver assigned'}
+                                </span>
+                              </span>
+                            )}
+                          </span>
+                        </td>
                         <td className="py-2 pr-2 tabular-nums text-text-muted">{i + 1}</td>
                         <td className="py-2 pr-2">
                           {canEdit ? (
@@ -319,7 +395,7 @@ function StintPlanEditor({
                               value={s.driverId ?? ''}
                               onChange={(e) => update(i, { driverId: e.target.value || null })}
                               aria-label={`Driver for stint ${i + 1}`}
-                              className={`${input} w-32 py-1`}
+                              className={`${input} w-36 py-1`}
                             >
                               <option value="">Unassigned</option>
                               {drivers.map((d) => (
@@ -335,28 +411,40 @@ function StintPlanEditor({
                           )}
                         </td>
                         {col.spotter && (
-                          <td className="py-2 pr-2">
-                            {canEdit ? (
-                              <select
-                                value={s.spotterId ?? ''}
-                                onChange={(e) => update(i, { spotterId: e.target.value || null })}
-                                aria-label={`Spotter for stint ${i + 1}`}
-                                className={`${input} w-28 py-1`}
-                              >
-                                <option value="">None</option>
-                                {group.members.map((m) => (
-                                  <option key={m.user.id} value={m.user.id}>
-                                    {nameOf(m.user)}
-                                  </option>
-                                ))}
-                              </select>
-                            ) : (
-                              <span className="text-text-muted">
-                                {s.spotterId && people.get(s.spotterId)
-                                  ? nameOf(people.get(s.spotterId)!)
-                                  : '—'}
-                              </span>
-                            )}
+                          <td className="py-2 pr-2 whitespace-nowrap">
+                            <span className="flex items-center gap-1">
+                              {canEdit ? (
+                                <select
+                                  value={s.spotterId ?? ''}
+                                  onChange={(e) => update(i, { spotterId: e.target.value || null })}
+                                  aria-label={`Spotter for stint ${i + 1}`}
+                                  className={`${input} w-32 py-1`}
+                                >
+                                  <option value="">None</option>
+                                  {group.members.map((m) => (
+                                    <option key={m.user.id} value={m.user.id}>
+                                      {nameOf(m.user)}
+                                    </option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <span className="text-text-muted">
+                                  {s.spotterId && people.get(s.spotterId)
+                                    ? nameOf(people.get(s.spotterId)!)
+                                    : '—'}
+                                </span>
+                              )}
+                              {spotterCheck && spotterCheck !== 'ok' && (
+                                <StintStatusIcon
+                                  check={spotterCheck}
+                                  who={
+                                    s.spotterId && people.get(s.spotterId)
+                                      ? `Spotter ${nameOf(people.get(s.spotterId)!)}`
+                                      : 'Spotter'
+                                  }
+                                />
+                              )}
+                            </span>
                           </td>
                         )}
                         {col.laps && (
@@ -376,7 +464,7 @@ function StintPlanEditor({
                                   })
                                 }
                                 aria-label={`Laps for stint ${i + 1} (leave empty to use the calculated value)`}
-                                className={`${input} w-14 py-1`}
+                                className={`${input} w-16 py-1`}
                               />
                             ) : (
                               <span className="tabular-nums">{p?.laps ?? '—'}</span>
@@ -388,13 +476,18 @@ function StintPlanEditor({
                             {canEdit ? (
                               <LapOverride
                                 value={s.lapMsOverride}
-                                placeholder={p ? formatLapTime(p.lapMs) : ''}
-                                label={`Lap time for stint ${i + 1} (leave empty to use the driver's pace)`}
+                                placeholder={
+                                  p ? `${p.estimated ? '~' : ''}${formatLapTime(p.lapMs)}` : ''
+                                }
+                                label={`Lap time for stint ${i + 1} (leave empty to use the driver's pace${p?.estimated ? '; currently the team average' : ''})`}
                                 onChange={(ms) => update(i, { lapMsOverride: ms })}
                               />
                             ) : (
-                              <span className="tabular-nums">
-                                {p ? formatLapTime(p.lapMs) : '—'}
+                              <span
+                                className={`tabular-nums ${p?.estimated ? 'text-text-muted italic' : ''}`}
+                                title={p?.estimated ? 'Estimated: team average pace' : undefined}
+                              >
+                                {p ? `${p.estimated ? '~' : ''}${formatLapTime(p.lapMs)}` : '—'}
                               </span>
                             )}
                           </td>
@@ -405,26 +498,31 @@ function StintPlanEditor({
                           </td>
                         )}
                         <td className="py-2 pr-2 whitespace-nowrap tabular-nums">
-                          {p ? (
-                            <span
-                              title={
-                                driver?.timezone
-                                  ? `${nameOf(driver)}: ${formatSlotLabel(p.start, driver.timezone)}–${formatSlotLabel(p.end, driver.timezone, localDayChanged(p.start, p.end, driver.timezone))} ${zoneAbbreviation(p.start, driver.timezone)}`
-                                  : undefined
-                              }
-                            >
+                          {!p ? (
+                            '—'
+                          ) : p.afterFlag ? (
+                            <span className="text-text-muted">after the flag</span>
+                          ) : (
+                            <>
                               {timeLabel(p.start)} → {timeLabel(p.end, p.start)}
+                              {p.endsAtFlag && (
+                                <>
+                                  {' '}
+                                  <span aria-hidden title="Ends at the flag">
+                                    🏁
+                                  </span>
+                                  <span className="sr-only">ends at the flag</span>
+                                </>
+                              )}
                               <span className="block text-[11px] text-text-muted">
                                 {formatStintLength(p.end.getTime() - p.start.getTime())}
                               </span>
-                            </span>
-                          ) : (
-                            '—'
+                            </>
                           )}
                         </td>
                         {col.driverTime && (
                           <td className="py-2 pr-2 whitespace-nowrap tabular-nums">
-                            {p && driver?.timezone ? (
+                            {timed && driver?.timezone ? (
                               <>
                                 {formatSlotLabel(p.start, driver.timezone)} →{' '}
                                 {formatSlotLabel(
@@ -444,72 +542,26 @@ function StintPlanEditor({
                         {col.pit && (
                           <td className="py-2 pr-2 whitespace-nowrap tabular-nums">
                             {p && p.pitMs > 0 ? `${(p.pitMs / 1000).toFixed(1)} s` : '—'}
-                            {canEdit &&
-                              p &&
-                              !p.afterFlag &&
-                              !p.endsAtFlag &&
-                              i < draft.length - 1 && (
-                                <label className="mt-1 flex items-center gap-1 text-[11px] text-text-muted">
-                                  +
-                                  <input
-                                    type="number"
-                                    min={0}
-                                    max={3600}
-                                    step="any"
-                                    value={s.extraPitSeconds || ''}
-                                    placeholder="0"
-                                    onChange={(e) =>
-                                      update(i, {
-                                        extraPitSeconds: Math.max(0, Number(e.target.value) || 0),
-                                      })
-                                    }
-                                    aria-label={`Extra seconds in the stop after stint ${i + 1}`}
-                                    className={`${input} w-14 px-1.5 py-0.5 text-[11px]`}
-                                  />
-                                  s extra
-                                </label>
-                              )}
-                          </td>
-                        )}
-                        {col.checks && (
-                          <td className="py-2 pr-2">
-                            <div className="flex flex-wrap gap-1">
-                              {p?.afterFlag && (
-                                <Badge className="border-border text-text-muted">
-                                  after the flag
-                                </Badge>
-                              )}
-                              {p?.endsAtFlag && (
-                                <Badge className="border-accent-strong/60 text-accent-strong">
-                                  🏁 flag
-                                </Badge>
-                              )}
-                              {p?.estimated && (
-                                <Badge className="border-maybe/60 text-maybe">estimated pace</Badge>
-                              )}
-                              {driverCheck !== 'ok' && (
-                                <Badge className={conflictClass[driverCheck]}>
-                                  <span aria-hidden>⚠ </span>driver: {conflictText[driverCheck]}
-                                </Badge>
-                              )}
-                              {spotterCheck !== 'ok' && (
-                                <Badge className={conflictClass[spotterCheck]}>
-                                  <span aria-hidden>⚠ </span>spotter: {conflictText[spotterCheck]}
-                                </Badge>
-                              )}
-                              {s.notes && !canEdit && (
-                                <span className="text-xs text-text-muted">{s.notes}</span>
-                              )}
-                            </div>
-                            {canEdit && (
-                              <input
-                                value={s.notes ?? ''}
-                                maxLength={500}
-                                placeholder="Notes"
-                                onChange={(e) => update(i, { notes: e.target.value || null })}
-                                aria-label={`Notes for stint ${i + 1}`}
-                                className={`${input} mt-1 w-full min-w-28 px-2 py-0.5 text-xs`}
-                              />
+                            {canEdit && timed && !p.endsAtFlag && i < draft.length - 1 && (
+                              <label className="mt-1 flex items-center gap-1 text-[11px] text-text-muted">
+                                +
+                                <input
+                                  type="number"
+                                  min={0}
+                                  max={3600}
+                                  step="any"
+                                  value={s.extraPitSeconds || ''}
+                                  placeholder="0"
+                                  onChange={(e) =>
+                                    update(i, {
+                                      extraPitSeconds: Math.max(0, Number(e.target.value) || 0),
+                                    })
+                                  }
+                                  aria-label={`Extra seconds in the stop after stint ${i + 1}`}
+                                  className={`${input} w-14 px-1.5 py-0.5 text-[11px]`}
+                                />
+                                s extra
+                              </label>
                             )}
                           </td>
                         )}
@@ -517,33 +569,15 @@ function StintPlanEditor({
                           <td className="py-2 text-right whitespace-nowrap">
                             <button
                               type="button"
-                              className={`${button.link} inline-flex size-6 items-center justify-center`}
-                              disabled={i === 0}
-                              onClick={() => move(i, -1)}
-                              aria-label={`Move stint ${i + 1} up`}
-                            >
-                              ↑
-                            </button>{' '}
-                            <button
-                              type="button"
-                              className={`${button.link} inline-flex size-6 items-center justify-center`}
-                              disabled={i === draft.length - 1}
-                              onClick={() => move(i, 1)}
-                              aria-label={`Move stint ${i + 1} down`}
-                            >
-                              ↓
-                            </button>{' '}
-                            <button
-                              type="button"
-                              className={`${button.link} inline-flex size-6 items-center justify-center`}
+                              className="inline-flex size-6 items-center justify-center rounded text-text-muted hover:text-unavailable"
                               onClick={() => {
                                 setDraft((d) => d.filter((_, j) => j !== i));
                                 save.reset();
                               }}
                               aria-label={`Remove stint ${i + 1}`}
-                              title="Remove"
+                              title="Remove stint"
                             >
-                              ✕
+                              <span aria-hidden>🗑</span>
                             </button>
                           </td>
                         )}
@@ -552,6 +586,9 @@ function StintPlanEditor({
                   })}
                 </tbody>
               </table>
+              <p className="sr-only" aria-live="polite">
+                {moved}
+              </p>
             </div>
           )}
 

@@ -93,8 +93,10 @@ rule 6), the spreadsheet's figures are at most starting defaults.
   answer in that window. Driving-time fairness per driver (stints, laps, minutes). Projected laps.
 - Privacy policy covers pace data.
 - Stint timeline (one row per driver, blocks at exact times, pit-stop row, availability tinted
-  behind each row, blocks jump to their table row, pin to keep it on screen) and a Display menu
-  (table columns; timezone: browser / you / track / UTC / any teammate; saved per browser).
+  behind each row, blocks jump to their table row; always sticky on large screens) and a Display
+  menu (table columns; timezone: track / browser / you / each person, identical zones merged, no
+  UTC; saved per browser). Each stint row leads with a drag handle (drag, or arrow keys) and a
+  driver status icon: ✓ available, ⚠ maybe or no answer, ✕ not available.
 - **Done when:** a manager builds a 24 h lineup from drivers' own pace numbers and sees exact
   stint times, conflicts and driving time per driver.
 

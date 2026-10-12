@@ -66,8 +66,9 @@ export function axisMarks(w: EventWindow, zone: string, from = 0, to = slotCount
   const step = 4 * Math.max(1, Math.ceil((to - from) / 4 / 12));
   const ticks: AxisTick[] = [];
   for (let i = from; i < to; i += step) {
-    // The day marker labels its own spot; ticks too close to it would overlap its label.
+    // Day markers and clock-change badges label their own spots; ticks too close would overlap.
     if (days.some((d) => Math.abs(d.slot - i) < step * 0.75)) continue;
+    if (clockChanges.some((c) => Math.abs(c.slot - i) < step * 0.75)) continue;
     ticks.push({ slot: i, label: formatSlotLabel(slotStart(w, i), zone, i === from) });
   }
   return { ticks, days, clockChanges };

@@ -1,6 +1,6 @@
 # Builds the React app, then serves the static files with Caddy (which also proxies the API).
 
-FROM node:22-alpine AS build
+FROM node:26-alpine AS build
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 RUN corepack enable
 WORKDIR /app

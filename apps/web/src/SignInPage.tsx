@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { AppLink, button } from './components/ui';
 
 const loginMessages: Record<string, string> = {
   denied: 'Discord sign-in was cancelled.',
@@ -60,6 +61,18 @@ export function SignInPage() {
 
       <p className="text-xs text-text-muted">
         We only ask Discord for your username and avatar. No email, no servers, no messages.
+        Discord&apos;s login tokens are never stored.
+      </p>
+      <p className="text-xs text-text-muted">
+        By signing in you agree to the{' '}
+        <AppLink to="/terms" className={button.link}>
+          Terms of Service
+        </AppLink>{' '}
+        and{' '}
+        <AppLink to="/privacy" className={button.link}>
+          Privacy Policy
+        </AppLink>
+        .
       </p>
     </section>
   );

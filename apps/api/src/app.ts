@@ -26,10 +26,19 @@ export interface AppDeps {
   logger?: FastifyServerOptions['logger'];
 }
 
+/**
+ * What request logs record: the method and path only. No IP addresses, and no query strings
+ * (the Discord callback carries a one-time code there). The privacy policy relies on this.
+ */
+export function requestLogFields(req: { method?: string; url?: string }) {
+  return { method: req.method, path: req.url?.split('?')[0] };
+}
+
 export async function buildApp({ config, pingDb, db, discord = null, logger }: AppDeps) {
   const app = Fastify({
     logger: logger ?? {
       level: config.LOG_LEVEL,
+      serializers: { req: requestLogFields },
       ...(config.NODE_ENV === 'development' && {
         transport: { target: 'pino-pretty', options: { translateTime: 'SYS:HH:MM:ss' } },
       }),

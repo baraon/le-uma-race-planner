@@ -4,10 +4,18 @@
 
 name: lmu-race-planner
 
+# Container logs rotate (3 × 10 MB per service) instead of growing without limit.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: '3'
+
 services:
   db:
     image: postgres:17-alpine
     restart: unless-stopped
+    logging: *logging
     environment:
       POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in .env}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
@@ -29,6 +37,7 @@ services:
         # Shown by /api/health; the deploy command passes the git commit.
         APP_VERSION: ${APP_VERSION:-dev}
     restart: unless-stopped
+    logging: *logging
     environment:
       NODE_ENV: production
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
@@ -49,6 +58,7 @@ services:
       context: .
       dockerfile: docker/web.Dockerfile
     restart: unless-stopped
+    logging: *logging
     environment:
       SITE_ADDRESS: ${SITE_ADDRESS:-:80}
     ports:

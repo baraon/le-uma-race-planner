@@ -1,6 +1,6 @@
 import { healthResponseSchema } from '@lmu/shared';
 import { describe, expect, it } from 'vitest';
-import { buildApp } from './app';
+import { buildApp, requestLogFields } from './app';
 import { loadConfig } from './config';
 
 const config = {
@@ -63,5 +63,18 @@ describe('config', () => {
     });
     expect(c.DISCORD_CLIENT_ID).toBeUndefined();
     expect(c.RUN_MIGRATIONS).toBe(true);
+  });
+});
+
+describe('request logs', () => {
+  it('keep the method and path only: no IP address, no query string', () => {
+    const fields = requestLogFields({
+      method: 'GET',
+      url: '/auth/discord/callback?code=secret-code&state=abc',
+      ip: '203.0.113.7',
+      headers: { 'x-forwarded-for': '203.0.113.7' },
+    } as never);
+    expect(fields).toEqual({ method: 'GET', path: '/auth/discord/callback' });
+    expect(JSON.stringify(fields)).not.toMatch(/203\.0\.113|secret-code/);
   });
 });

@@ -8,6 +8,7 @@ import { EventPage } from './pages/EventPage';
 import { GroupPage } from './pages/GroupPage';
 import { HomePage } from './pages/HomePage';
 import { InvitePage } from './pages/InvitePage';
+import { LegalFooter, PrivacyPage, TermsPage } from './pages/LegalPages';
 import { ProfilePage } from './ProfilePage';
 import { SignInPage } from './SignInPage';
 import { UserMenu } from './UserMenu';
@@ -37,7 +38,11 @@ export function App() {
   useAdoptBrowserTimeZone(me.data);
 
   let page;
-  if (me.isPending) {
+  if (path === '/terms') {
+    page = <TermsPage />; // readable without signing in
+  } else if (path === '/privacy') {
+    page = <PrivacyPage />;
+  } else if (me.isPending) {
     page = <p className="text-sm text-text-muted">Loading…</p>;
   } else if (!me.data) {
     page = <SignInPage />;
@@ -61,6 +66,7 @@ export function App() {
 
       <main className="flex flex-col gap-8">{page}</main>
 
+      <LegalFooter />
       <DialogHost />
     </div>
   );

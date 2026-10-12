@@ -1,5 +1,5 @@
 /** Availability saving and reading, and trimming when an event moves, against a real Postgres. */
-import { availabilityRowSchema, groupDetailSchema, type SlotBlock } from '@lmu/shared';
+import { availabilityRowSchema, groupDetailSchema, type SlotBlock } from '@le-uma/shared';
 import { eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';

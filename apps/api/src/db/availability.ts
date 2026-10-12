@@ -1,8 +1,8 @@
 /**
  * Availability storage: one row per run of same-status time for a driver, as a half-open
- * tstzrange. The API speaks slot blocks; conversion happens in the routes with @lmu/shared.
+ * tstzrange. The API speaks slot blocks; conversion happens in the routes with @le-uma/shared.
  */
-import { clipToWindow, type AvailabilityStatus, type EventWindow } from '@lmu/shared';
+import { clipToWindow, type AvailabilityStatus, type EventWindow } from '@le-uma/shared';
 import { and, asc, eq, sql } from 'drizzle-orm';
 import type { Db } from './client';
 import { availability } from './schema';

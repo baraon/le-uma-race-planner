@@ -1,5 +1,5 @@
 {
-  "name": "@lmu/api",
+  "name": "@le-uma/api",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -21,7 +21,7 @@
     "zod": "^3.25.0"
   },
   "devDependencies": {
-    "@lmu/shared": "workspace:*",
+    "@le-uma/shared": "workspace:*",
     "@types/node": "^22.15.0",
     "pino-pretty": "^13.0.0",
     "tsup": "^8.4.0",

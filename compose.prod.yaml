@@ -2,7 +2,7 @@
 #   docker compose -f compose.prod.yaml up -d --build
 # Needs a filled-in .env next to this file (see .env.example). Postgres is not exposed publicly.
 
-name: lmu-race-planner
+name: le-uma-race-planner
 
 # Container logs rotate (3 × 10 MB per service) instead of growing without limit.
 x-logging: &logging

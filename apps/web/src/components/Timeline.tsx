@@ -9,7 +9,7 @@ import {
   zoneAbbreviation,
   type EventWindow,
   type Paint,
-} from '@lmu/shared';
+} from '@le-uma/shared';
 import { slotClass, statusLabel } from './status';
 
 /** "Sat 18:00–18:15 CST" for slots [from, to) in `zone`. */

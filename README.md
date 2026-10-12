@@ -1,6 +1,6 @@
 # Le Uma Race Planner
 
-Driver availability planning for **Le Mans Ultimate** endurance races. Each driver marks when they
+Driver availability planning for sim endurance races. Each driver marks when they
 can race on a shared timeline, and everyone sees it in their own timezone.
 
 > Status: **Phase 4 — overview and launch.** Discord login, groups with invite links, teams,
@@ -46,15 +46,15 @@ You need [Docker Desktop](https://www.docker.com/products/docker-desktop/) (or D
 Git. Node.js 22 and pnpm are optional but help your editor (`corepack enable` gives you pnpm).
 
 ```bash
-git clone https://github.com/baraon/lmu-race-planner.git
-cd lmu-race-planner
+git clone https://github.com/baraon/le-uma-race-planner.git
+cd le-uma-race-planner
 cp .env.example .env        # defaults work for local development
 docker compose up
 ```
 
 Then open <http://localhost:5173>. The first start takes a minute while dependencies install.
 The API runs at <http://localhost:3000> (health check: `/api/health`), and Postgres is on
-`localhost:5432` (user `lmu`, password `lmu-dev-password`).
+`localhost:5432` (user `leuma`, password `leuma-dev-password`).
 
 The containers mount your source folder, so the web app and API reload when you save a file.
 
@@ -68,11 +68,11 @@ Requires Node.js 22, pnpm and a local PostgreSQL.
 
 ```bash
 pnpm install
-export DATABASE_URL=postgres://lmu:lmu-dev-password@localhost:5432/lmu
+export DATABASE_URL=postgres://leuma:leuma-dev-password@localhost:5432/leuma
 export SESSION_SECRET=dev-only-session-secret-change-me-0000000000
 pnpm db:migrate
-pnpm --filter @lmu/api dev     # terminal 1
-pnpm --filter @lmu/web dev     # terminal 2
+pnpm --filter @le-uma/api dev     # terminal 1
+pnpm --filter @le-uma/web dev     # terminal 2
 ```
 
 ### First run: commit the lockfile
@@ -123,7 +123,7 @@ compose.prod.yaml   Production stack (single server)
 On a small Linux server with Docker installed:
 
 ```bash
-git clone https://github.com/baraon/lmu-race-planner.git && cd lmu-race-planner
+git clone https://github.com/baraon/le-uma-race-planner.git && cd le-uma-race-planner
 cp .env.example .env   # set real passwords, SESSION_SECRET, APP_URL, SITE_ADDRESS
 docker compose -f compose.prod.yaml up -d --build
 ```

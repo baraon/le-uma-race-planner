@@ -12,7 +12,7 @@ import {
   type AvailabilityRow,
   type EventWindow,
   type RaceEvent,
-} from '@lmu/shared';
+} from '@le-uma/shared';
 import { and, eq } from 'drizzle-orm';
 import type { FastifyPluginAsync } from 'fastify';
 import { requireUser } from '../auth/authenticate';

@@ -20,7 +20,7 @@ import {
   type Paint,
   type RaceEvent,
   type UserSummary,
-} from '@lmu/shared';
+} from '@le-uma/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Fragment, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import { slotClass, statusClass, statusLabel } from '../components/status';

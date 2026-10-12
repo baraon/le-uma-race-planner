@@ -1,4 +1,4 @@
-import { createTeamSchema } from '@lmu/shared';
+import { createTeamSchema } from '@le-uma/shared';
 import { and, eq } from 'drizzle-orm';
 import type { FastifyPluginAsync } from 'fastify';
 import { requireUser } from '../auth/authenticate';

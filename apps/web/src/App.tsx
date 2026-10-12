@@ -1,4 +1,4 @@
-import type { Me } from '@lmu/shared';
+import type { Me } from '@le-uma/shared';
 import type { ReactNode } from 'react';
 import { DialogHost } from './components/Dialog';
 import { linkClick, matchRoute, usePath } from './lib/router';

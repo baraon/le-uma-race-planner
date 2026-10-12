@@ -19,7 +19,7 @@ runs anywhere Docker does (for example the DGX Spark behind a Cloudflare Tunnel 
 4. **Server.** As root over SSH:
    - 2 GB swap (lets a 1 GB droplet build the images), Docker Engine + Compose plugin, `ufw`
      allowing 22, 80, 443.
-   - `git clone https://github.com/baraon/lmu-race-planner.git /opt/leuma`
+   - `git clone https://github.com/baraon/le-uma-race-planner.git /opt/leuma`
    - `/opt/leuma/.env` (mode 600) with: `POSTGRES_USER`, `POSTGRES_PASSWORD` (random),
      `POSTGRES_DB`, `SESSION_SECRET` (random, 32+ chars), `APP_URL=https://leumaplanner.com`,
      `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`,

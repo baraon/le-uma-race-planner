@@ -1,4 +1,4 @@
-import type { HealthResponse } from '@lmu/shared';
+import type { HealthResponse } from '@le-uma/shared';
 import type { FastifyPluginAsync } from 'fastify';
 
 export type DbPing = () => Promise<unknown>;

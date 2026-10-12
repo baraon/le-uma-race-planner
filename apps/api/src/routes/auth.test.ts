@@ -2,7 +2,7 @@
  * Login, session and profile tests against a real Postgres (CI provides one; skipped without
  * DATABASE_URL) and a fake Discord: nothing here touches the network.
  */
-import { meSchema } from '@lmu/shared';
+import { meSchema } from '@le-uma/shared';
 import { eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';

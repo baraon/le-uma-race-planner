@@ -8,7 +8,7 @@ let failed = false;
 
 for (const tz of zones) {
   console.log(`\n=== TZ=${tz} ===`);
-  const result = spawnSync('pnpm', ['--filter', '@lmu/shared', 'test'], {
+  const result = spawnSync('pnpm', ['--filter', '@le-uma/shared', 'test'], {
     stdio: 'inherit',
     env: { ...process.env, TZ: tz },
     shell: process.platform === 'win32',

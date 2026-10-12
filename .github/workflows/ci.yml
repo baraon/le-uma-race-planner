@@ -20,15 +20,15 @@ jobs:
       postgres:
         image: postgres:17-alpine
         env:
-          POSTGRES_USER: lmu
-          POSTGRES_PASSWORD: lmu
-          POSTGRES_DB: lmu
+          POSTGRES_USER: leuma
+          POSTGRES_PASSWORD: leuma
+          POSTGRES_DB: leuma
         ports: ['5432:5432']
         options: >-
-          --health-cmd "pg_isready -U lmu -d lmu"
+          --health-cmd "pg_isready -U leuma -d leuma"
           --health-interval 2s --health-timeout 3s --health-retries 20
     env:
-      DATABASE_URL: postgres://lmu:lmu@localhost:5432/lmu
+      DATABASE_URL: postgres://leuma:leuma@localhost:5432/leuma
     steps:
       - uses: actions/checkout@v4
 
@@ -66,7 +66,7 @@ jobs:
         run: pnpm db:migrate
 
       - name: Test (api, web)
-        run: pnpm --filter @lmu/api --filter @lmu/web test
+        run: pnpm --filter @le-uma/api --filter @le-uma/web test
 
       - name: Build
         run: pnpm build
@@ -78,6 +78,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build API image
-        run: docker build -f docker/api.Dockerfile --build-arg APP_VERSION=${GITHUB_SHA::7} -t lmu-api .
+        run: docker build -f docker/api.Dockerfile --build-arg APP_VERSION=${GITHUB_SHA::7} -t le-uma-api .
       - name: Build web image
-        run: docker build -f docker/web.Dockerfile -t lmu-web .
+        run: docker build -f docker/web.Dockerfile -t le-uma-web .

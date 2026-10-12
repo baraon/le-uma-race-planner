@@ -11,7 +11,7 @@ import {
   type GroupDetail,
   type Me,
   type RaceEvent,
-} from '@lmu/shared';
+} from '@le-uma/shared';
 import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import { TimeZoneSelect } from '../components/TimeZoneSelect';

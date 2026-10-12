@@ -36,6 +36,10 @@ async function selectEvents(db: Db, where: SQL | undefined): Promise<RaceEvent[]
     carClass: event.carClass,
     trackTimezone: event.trackTimezone,
     minDrivers: event.minDrivers,
+    fuelUnit: event.fuelUnit,
+    fuelCapacity: event.fuelCapacity,
+    refuelSeconds: event.refuelSeconds,
+    pitLaneLossSeconds: event.pitLaneLossSeconds,
   }));
 }
 

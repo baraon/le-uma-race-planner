@@ -404,6 +404,37 @@ describe.skipIf(!DATABASE_URL)('groups, teams and events', () => {
       );
     }
 
+    // Strategy settings: defaults when omitted, editable, validated.
+    expect(event).toMatchObject({
+      fuelUnit: 'percent',
+      fuelCapacity: 100,
+      refuelSeconds: 60,
+      pitLaneLossSeconds: 30,
+    });
+    const tuned = await call(planner, 'POST', `/api/teams/${team.id}/events`, {
+      ...input,
+      name: 'Tuned',
+      fuelUnit: 'litres',
+      fuelCapacity: 75.5,
+      refuelSeconds: 42.5,
+      pitLaneLossSeconds: 31,
+    });
+    expect(tuned.json()).toMatchObject({
+      fuelUnit: 'litres',
+      fuelCapacity: 75.5,
+      refuelSeconds: 42.5,
+      pitLaneLossSeconds: 31,
+    });
+    for (const bad of [
+      { fuelUnit: 'gallons' },
+      { fuelCapacity: 0 },
+      { refuelSeconds: -1 },
+      { pitLaneLossSeconds: 301 },
+    ]) {
+      const res = await call(planner, 'POST', `/api/teams/${team.id}/events`, { ...input, ...bad });
+      expect(res.statusCode, JSON.stringify(bad)).toBe(400);
+    }
+
     const moved = await call(planner, 'PUT', `/api/events/${event.id}`, {
       ...input,
       durationMinutes: 240,

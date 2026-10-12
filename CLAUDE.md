@@ -43,9 +43,10 @@ Owner: Baraon (GitHub `baraon`), based in America/Chicago, develops on Windows.
    exist only at the edges (display and input). Users have an IANA zone (`America/Chicago`),
    never a fixed offset (`UTC-5`). Never use local-time getters (`getHours()` etc.) in shared or
    server code; use the helpers in `packages/shared/src/timezones.ts`.
-2. **Slots:** 15 minutes, counted from the event's green flag (slot 0). Fixed for now because
-   future stint planning uses the same unit. A final partial slot counts as a slot ending at the
-   flag. Availability periods are half-open `[start, end)`.
+2. **Slots (availability only):** 15 minutes, counted from the event's green flag (slot 0). A
+   final partial slot counts as a slot ending at the flag. Availability periods are half-open
+   `[start, end)`. **Stints are not slot-aligned:** their times come from laps × lap time plus pit
+   stops and are exact instants, laid over the slot grid for display and conflict checks.
 3. **Discord auth: minimum permissions.** Request only the `identify` OAuth2 scope. No `email`,
    `guilds`, `connections`, no bot, no permission integer. Exchange the code server-side, call
    `GET /users/@me` once, then **discard Discord's tokens**. Store only Discord user ID, username,
@@ -56,6 +57,10 @@ Owner: Baraon (GitHub `baraon`), based in America/Chicago, develops on Windows.
 5. **The database enforces integrity** where it can (exclusion constraint for overlapping
    availability, trigger for slot alignment and event window, one owner per group). Keep it that
    way; don't move those rules into app code only.
+6. **Every strategy number is a variable.** Lap times, consumption, tank size, refuel time,
+   pit-lane loss, tyre counts and so on are user-editable values (per driver, track, class or
+   event). Built-in figures, e.g. per-track pit-lane loss, are only editable starting defaults;
+   never hardcode them into calculations.
 
 ## Domain model (v1)
 

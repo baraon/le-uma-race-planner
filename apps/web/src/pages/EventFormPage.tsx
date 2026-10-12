@@ -8,6 +8,11 @@ import {
   fromZonedInput,
   toZonedInput,
   zoneAbbreviation,
+  CAR_CLASSES,
+  findTrack,
+  STRATEGY_DEFAULTS,
+  TRACKS,
+  type FuelUnit,
   type GroupDetail,
   type Me,
   type RaceEvent,
@@ -21,24 +26,6 @@ import { useEvent, useGroup, useInvalidateEvents } from '../lib/queries';
 import { navigate } from '../lib/router';
 import { viewerTimeZone } from '../lib/session';
 import { useDocumentTitle } from '../lib/title';
-
-/** Endurance circuits and their local zones, to pre-fill "track time". */
-const TRACKS: Record<string, string> = {
-  'Circuit de la Sarthe (Le Mans)': 'Europe/Paris',
-  'Spa-Francorchamps': 'Europe/Brussels',
-  'Sebring International Raceway': 'America/New_York',
-  'Autodromo Nazionale Monza': 'Europe/Rome',
-  'Autodromo Enzo e Dino Ferrari (Imola)': 'Europe/Rome',
-  'Fuji Speedway': 'Asia/Tokyo',
-  'Bahrain International Circuit': 'Asia/Bahrain',
-  'Lusail International Circuit (Qatar)': 'Asia/Qatar',
-  'Algarve International Circuit (Portimão)': 'Europe/Lisbon',
-  'Autódromo José Carlos Pace (Interlagos)': 'America/Sao_Paulo',
-  'Circuit of the Americas': 'America/Chicago',
-  'Silverstone Circuit': 'Europe/London',
-  'Circuit Paul Ricard': 'Europe/Paris',
-};
-const CAR_CLASSES = ['Hypercar', 'LMP2', 'LMP3', 'LMGT3', 'GTE'];
 
 export function NewEventPage({ groupId, me }: { groupId: string; me: Me }) {
   useDocumentTitle('New event');
@@ -73,6 +60,33 @@ function EventForm({ group, me, event }: { group: GroupDetail; me: Me; event?: R
   const [carClass, setCarClass] = useState(event?.carClass ?? '');
   const [trackZone, setTrackZone] = useState<string | null>(event?.trackTimezone ?? null);
   const [minDrivers, setMinDrivers] = useState<number | null>(event?.minDrivers ?? null);
+  // Strategy settings: every value editable; track and class only suggest starting values.
+  const [fuelUnit, setFuelUnit] = useState<FuelUnit>(event?.fuelUnit ?? STRATEGY_DEFAULTS.fuelUnit);
+  const [fuelCapacity, setFuelCapacity] = useState(
+    String(event?.fuelCapacity ?? STRATEGY_DEFAULTS.fuelCapacity),
+  );
+  const [refuelSeconds, setRefuelSeconds] = useState(
+    String(event?.refuelSeconds ?? STRATEGY_DEFAULTS.refuelSeconds),
+  );
+  const [pitLoss, setPitLoss] = useState(
+    String(event?.pitLaneLossSeconds ?? STRATEGY_DEFAULTS.pitLaneLossSeconds),
+  );
+  const [touched, setTouched] = useState({ unit: false, pitLoss: false });
+  const strategy = {
+    fuelCapacity: Number(fuelCapacity),
+    refuelSeconds: Number(refuelSeconds),
+    pitLaneLossSeconds: Number(pitLoss),
+  };
+  const strategyValid =
+    fuelCapacity !== '' &&
+    strategy.fuelCapacity > 0 &&
+    strategy.fuelCapacity <= 1000 &&
+    refuelSeconds !== '' &&
+    strategy.refuelSeconds >= 0 &&
+    strategy.refuelSeconds <= 600 &&
+    pitLoss !== '' &&
+    strategy.pitLaneLossSeconds >= 0 &&
+    strategy.pitLaneLossSeconds <= 300;
   const invalidate = useInvalidateEvents();
 
   const durationMinutes = hours * 60 + minutes;
@@ -98,6 +112,8 @@ function EventForm({ group, me, event }: { group: GroupDetail; me: Me; event?: R
         carClass,
         trackTimezone: trackZone,
         minDrivers,
+        fuelUnit,
+        ...strategy,
       };
       return event ? updateEvent(event.id, input) : createEvent(teamId, input);
     },
@@ -116,7 +132,7 @@ function EventForm({ group, me, event }: { group: GroupDetail; me: Me; event?: R
         className="flex flex-col gap-5"
         onSubmit={(e) => {
           e.preventDefault();
-          if (valid) save.mutate();
+          if (valid && strategyValid) save.mutate();
         }}
       >
         <div className="grid gap-4 sm:grid-cols-2">
@@ -248,15 +264,16 @@ function EventForm({ group, me, event }: { group: GroupDetail; me: Me; event?: R
               list="track-options"
               onChange={(e) => {
                 setTrack(e.target.value);
-                const zone = TRACKS[e.target.value];
-                if (zone && !trackZone) setTrackZone(zone);
+                const known = findTrack(e.target.value);
+                if (known && !trackZone) setTrackZone(known.timezone);
+                if (known && !touched.pitLoss) setPitLoss(String(known.pitLaneLossSeconds));
               }}
               maxLength={80}
               className={input}
             />
             <datalist id="track-options">
-              {Object.keys(TRACKS).map((t) => (
-                <option key={t} value={t} />
+              {TRACKS.map((t) => (
+                <option key={t.name} value={t.name} />
               ))}
             </datalist>
           </label>
@@ -265,13 +282,17 @@ function EventForm({ group, me, event }: { group: GroupDetail; me: Me; event?: R
             <input
               value={carClass}
               list="class-options"
-              onChange={(e) => setCarClass(e.target.value)}
+              onChange={(e) => {
+                setCarClass(e.target.value);
+                const known = CAR_CLASSES.find((c) => c.name === e.target.value);
+                if (known && !touched.unit) setFuelUnit(known.fuelUnit);
+              }}
               maxLength={40}
               className={input}
             />
             <datalist id="class-options">
               {CAR_CLASSES.map((c) => (
-                <option key={c} value={c} />
+                <option key={c.name} value={c.name} />
               ))}
             </datalist>
           </label>
@@ -300,8 +321,81 @@ function EventForm({ group, me, event }: { group: GroupDetail; me: Me; event?: R
           </span>
         </label>
 
+        <fieldset className="flex flex-col gap-2">
+          <legend className="mb-1 text-sm font-medium">Race strategy</legend>
+          <p className="-mt-1 text-xs text-text-muted">
+            Used by the stint planner. Track and class fill in starting values; change anything to
+            match your race.
+          </p>
+          <div className="grid gap-4 sm:grid-cols-4">
+            <label className={label}>
+              <span>Fuel measured in</span>
+              <select
+                value={fuelUnit}
+                onChange={(e) => {
+                  setFuelUnit(e.target.value as FuelUnit);
+                  setTouched((t) => ({ ...t, unit: true }));
+                }}
+                className={input}
+              >
+                <option value="percent">Energy (%)</option>
+                <option value="litres">Fuel (litres)</option>
+              </select>
+            </label>
+            <label className={label}>
+              <span>{fuelUnit === 'percent' ? 'Usable energy (%)' : 'Tank size (litres)'}</span>
+              <input
+                type="number"
+                min={0.1}
+                max={1000}
+                step="any"
+                value={fuelCapacity}
+                onChange={(e) => setFuelCapacity(e.target.value)}
+                className={input}
+              />
+            </label>
+            <label className={label}>
+              <span>Full refuel time (s)</span>
+              <input
+                type="number"
+                min={0}
+                max={600}
+                step="any"
+                value={refuelSeconds}
+                onChange={(e) => setRefuelSeconds(e.target.value)}
+                className={input}
+              />
+            </label>
+            <label className={label}>
+              <span>Pit-lane time loss (s)</span>
+              <input
+                type="number"
+                min={0}
+                max={300}
+                step="any"
+                value={pitLoss}
+                onChange={(e) => {
+                  setPitLoss(e.target.value);
+                  setTouched((t) => ({ ...t, pitLoss: true }));
+                }}
+                className={input}
+              />
+            </label>
+          </div>
+          {!strategyValid && (
+            <p className="text-sm text-unavailable">
+              <span aria-hidden>⚠ </span>Check the strategy values: capacity above 0 (max 1000),
+              refuel 0–600 s, pit-lane loss 0–300 s.
+            </p>
+          )}
+        </fieldset>
+
         <div className="flex flex-wrap items-center gap-3">
-          <button type="submit" disabled={!valid || save.isPending} className={button.primary}>
+          <button
+            type="submit"
+            disabled={!valid || !strategyValid || save.isPending}
+            className={button.primary}
+          >
             {save.isPending ? 'Saving…' : event ? 'Save changes' : 'Create event'}
           </button>
           <AppLink

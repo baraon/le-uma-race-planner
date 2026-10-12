@@ -5,6 +5,7 @@
 import {
   boolean,
   customType,
+  doublePrecision,
   integer,
   pgEnum,
   pgTable,
@@ -129,6 +130,12 @@ export const events = pgTable('events', {
   trackTimezone: text('track_timezone'),
   /** Drivers needed available at once; null = at least one. */
   minDrivers: smallint('min_drivers'),
+  fuelUnit: text('fuel_unit', { enum: ['percent', 'litres'] })
+    .notNull()
+    .default('percent'),
+  fuelCapacity: doublePrecision('fuel_capacity').notNull().default(100),
+  refuelSeconds: doublePrecision('refuel_seconds').notNull().default(60),
+  pitLaneLossSeconds: doublePrecision('pit_lane_loss_seconds').notNull().default(30),
   createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
   createdAt: instant('created_at').notNull().defaultNow(),
 });

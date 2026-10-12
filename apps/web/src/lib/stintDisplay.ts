@@ -55,6 +55,8 @@ export function useStintDisplay() {
 
 export interface ZoneOption {
   zone: string;
+  /** Who it's for, e.g. "Track time, Lukas". */
+  who: string;
   /** e.g. "Europe/Berlin · track time, Lukas" */
   label: string;
 }
@@ -73,11 +75,15 @@ export function zoneChoices(
   const add = (zone: string | null, label: string) => {
     if (zone) who.set(zone, [...(who.get(zone) ?? []), label]);
   };
-  add(event.trackTimezone, 'track time');
-  add(browserZone, 'browser default');
-  add(me.timezone, 'you');
+  add(event.trackTimezone, 'Track time');
+  add(browserZone, 'Browser default');
+  add(me.timezone, 'You');
   for (const p of people) if (p.id !== me.id) add(p.timezone, p.displayName ?? p.username);
-  return [...who].map(([zone, labels]) => ({ zone, label: `${zone} · ${labels.join(', ')}` }));
+  return [...who].map(([zone, labels]) => ({
+    zone,
+    who: labels.join(', '),
+    label: `${zone} · ${labels.join(', ')}`,
+  }));
 }
 
 /** The saved zone if it's still on offer; otherwise the viewer's own. */

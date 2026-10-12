@@ -92,10 +92,15 @@ rule 6), the spreadsheet's figures are at most starting defaults.
 - Availability conflicts: flag stints whose driver or spotter is Not available / Maybe / no
   answer in that window. Driving-time fairness per driver (stints, laps, minutes). Projected laps.
 - Privacy policy covers pace data.
+- Smart "Fill to the flag" (`packages/shared/src/fill.ts`): greedy, stint by stint; scores each
+  driver on availability (not available only as a last resort), preferred run length (default
+  double stints), rest between runs (default 2 stints) and driving-time balance (equal, or faster
+  drivers drive more). Options are editable and saved per browser. It only appends after
+  existing stints, and warns when a run is longer than the preferred length.
 - Stint timeline (one row per driver, blocks at exact times, pit-stop row, availability tinted
-  behind each row, blocks jump to their table row; always sticky on large screens) and a Display
-  menu (table columns; timezone: track / browser / you / each person, identical zones merged, no
-  UTC; saved per browser). Each stint row leads with a drag handle (drag, or arrow keys) and a
+  behind each row, back-to-back stints drawn as one block, blocks jump to their table row; always
+  sticky on large screens) and an always-visible display bar (table columns; timezone: track /
+  browser / you / each person, identical zones merged, no UTC; saved per browser). Each stint row leads with a drag handle (drag, or arrow keys) and a
   driver status icon: ✓ available, ⚠ maybe or no answer, ✕ not available.
 - **Done when:** a manager builds a 24 h lineup from drivers' own pace numbers and sees exact
   stint times, conflicts and driving time per driver.
@@ -114,7 +119,8 @@ rule 6), the spreadsheet's figures are at most starting defaults.
   rest; optionally refine driver averages from real laps.
 - Stint notes and per-driver setup preferences shown to the next driver (a "Setup" column, like
   the reference tool's dry / wet / eco). Weather is out of scope unless a data source appears.
-- Auto-suggested lineup from availability and fairness. Export (print / CSV / Discord text).
+- Export (print / CSV / Discord text). Auto-assign spotters; shorten a stint to fit a driver who
+  is only free for part of it. (The auto-suggested lineup itself shipped early, see Phase 5.)
 
 ## Required timezone test cases (keep these passing)
 

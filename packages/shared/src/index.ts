@@ -5,3 +5,4 @@ export * from './timeline';
 export * from './tracks';
 export * from './stints';
 export * from './plan';
+export * from './fill';

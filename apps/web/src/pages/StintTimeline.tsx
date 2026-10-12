@@ -14,6 +14,7 @@ import {
   type EventWindow,
   type Paint,
   type PlanResult,
+  type PlannedStint,
   type Stint,
   type UserSummary,
 } from '@le-uma/shared';
@@ -23,6 +24,17 @@ import { Card } from '../components/ui';
 import { useNow } from '../lib/now';
 
 const nameOf = (u: UserSummary) => u.displayName ?? u.username;
+
+/** Groups a driver's stints into runs of back-to-back stints (a double is one run of two). */
+function runsOf(stints: PlannedStint[]): PlannedStint[][] {
+  const runs: PlannedStint[][] = [];
+  for (const s of stints) {
+    const last = runs.at(-1);
+    if (last && last.at(-1)!.index === s.index - 1) last.push(s);
+    else runs.push([s]);
+  }
+  return runs;
+}
 
 const tint: Record<string, string> = {
   available: 'bg-available/15',
@@ -61,9 +73,6 @@ export function StintTimeline({
   const nowMs = now.getTime();
   const showNow = nowMs >= start && nowMs < start + total;
   const stops = running.filter((s) => s.pitMs > 0);
-
-  const label = (s: (typeof running)[number]) =>
-    `Stint ${s.index + 1}: ${formatSlotLabel(s.start, zone)}–${formatSlotLabel(s.end, zone, localDayChanged(s.start, s.end, zone))} ${zoneAbbreviation(s.start, zone)}, ${formatStintLength(s.end.getTime() - s.start.getTime())}`;
 
   return (
     <div className="lg:sticky lg:top-2 lg:z-20 lg:shadow-2xl">
@@ -114,38 +123,64 @@ export function StintTimeline({
                       <ul
                         aria-label={`${name}: ${mine.length} stint${mine.length === 1 ? '' : 's'}`}
                       >
-                        {mine.map((s) => {
-                          const check = id ? availabilityDuring(w, paint, s.start, s.end) : 'ok';
+                        {runsOf(mine).map((run) => {
+                          const first = run[0]!;
+                          const last = run.at(-1)!;
+                          const from = first.start.getTime();
+                          const span = last.end.getTime() - from;
+                          // The worst status of any stint in the run decides the icon.
+                          const checks = run.map((s) =>
+                            id ? availabilityDuring(w, paint, s.start, s.end) : 'ok',
+                          );
+                          const check =
+                            (['unavailable', 'maybe', 'none'] as const).find((c) =>
+                              checks.includes(c),
+                            ) ?? 'ok';
                           const conflict = check !== 'ok';
+                          const estimated = run.some((s) => s.estimated);
+                          const what =
+                            run.length === 1
+                              ? `Stint ${first.index + 1}`
+                              : `Stints ${first.index + 1}–${last.index + 1} (${run.length} in a row)`;
+                          const when = `${formatSlotLabel(first.start, zone)}–${formatSlotLabel(last.end, zone, localDayChanged(first.start, last.end, zone))} ${zoneAbbreviation(first.start, zone)}, ${formatStintLength(span)}`;
+                          const theirZone = id ? people.get(id)?.timezone : null;
                           return (
                             <li
-                              key={s.index}
+                              key={first.index}
                               className="absolute inset-y-1"
-                              style={{
-                                left: pct(s.start.getTime()),
-                                width: width(s.end.getTime() - s.start.getTime()),
-                              }}
+                              style={{ left: pct(from), width: width(span) }}
                             >
                               <a
-                                href={`#stint-${s.index + 1}`}
+                                href={`#stint-${first.index + 1}`}
                                 onClick={(e) => {
                                   // Scroll to the stint's row without changing the URL (the
                                   // hash belongs to the tabs), and flash it so it's easy to spot.
                                   e.preventDefault();
-                                  const row = document.getElementById(`stint-${s.index + 1}`);
+                                  const row = document.getElementById(`stint-${first.index + 1}`);
                                   if (!row) return;
                                   row.scrollIntoView({ behavior: 'smooth', block: 'center' });
                                   row.classList.add('bg-accent/15');
                                   setTimeout(() => row.classList.remove('bg-accent/15'), 1600);
                                 }}
-                                aria-label={`${label(s)}${conflict ? `, driver ${check === 'unavailable' ? 'not available' : check === 'maybe' ? 'maybe' : 'no answer'}` : ''}${s.estimated ? ', estimated pace' : ''}`}
-                                title={`${label(s)}${id && people.get(id)?.timezone ? ` · starts ${formatSlotLabel(s.start, people.get(id)!.timezone!)} their time` : ''}`}
-                                className={`flex h-full items-center justify-center overflow-hidden rounded text-[10px] font-semibold text-white ${
+                                aria-label={`${what}: ${when}${conflict ? `, driver ${stintStatus[check].label}` : ''}${estimated ? ', estimated pace' : ''}`}
+                                title={`${what}: ${when}${theirZone ? ` · starts ${formatSlotLabel(first.start, theirZone)} their time` : ''}`}
+                                className={`relative flex h-full items-center justify-center overflow-hidden rounded text-[10px] font-semibold text-white ${
                                   conflict
                                     ? 'bg-accent/70 ring-2 ring-unavailable ring-inset'
                                     : 'bg-accent'
-                                } ${s.estimated ? 'border border-dashed border-white/60' : ''} hover:brightness-110`}
+                                } ${estimated ? 'border border-dashed border-white/60' : ''} hover:brightness-110`}
                               >
+                                {/* A thin divider at each pit stop inside a multi-stint run. */}
+                                {run.slice(1).map((s) => (
+                                  <span
+                                    key={s.index}
+                                    aria-hidden
+                                    className="absolute inset-y-0 w-px bg-bg/70"
+                                    style={{
+                                      left: `${((s.start.getTime() - from) / span) * 100}%`,
+                                    }}
+                                  />
+                                ))}
                                 {conflict && <span aria-hidden>{stintStatus[check].glyph}</span>}
                               </a>
                             </li>

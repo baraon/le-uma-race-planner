@@ -22,9 +22,9 @@ describe('zoneChoices', () => {
       'America/New_York',
     );
     expect(options.map((o) => o.label)).toEqual([
-      'Europe/Paris · track time',
-      'America/New_York · browser default',
-      'America/Chicago · you',
+      'Europe/Paris · Track time',
+      'America/New_York · Browser default',
+      'America/Chicago · You',
       'Europe/Berlin · Lukas',
       'Asia/Kolkata · Priya',
     ]);
@@ -44,8 +44,16 @@ describe('zoneChoices', () => {
       'America/Chicago',
     );
     expect(options).toEqual([
-      { zone: 'Europe/Berlin', label: 'Europe/Berlin · track time, Lukas, Mosti' },
-      { zone: 'America/Chicago', label: 'America/Chicago · browser default, you, Azim' },
+      {
+        zone: 'Europe/Berlin',
+        who: 'Track time, Lukas, Mosti',
+        label: 'Europe/Berlin · Track time, Lukas, Mosti',
+      },
+      {
+        zone: 'America/Chicago',
+        who: 'Browser default, You, Azim',
+        label: 'America/Chicago · Browser default, You, Azim',
+      },
     ]);
   });
 

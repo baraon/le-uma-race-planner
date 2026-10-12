@@ -15,6 +15,7 @@ import {
   localDayChanged,
   parseLapTime,
   planStints,
+  suggestStints,
   slotCount,
   zoneAbbreviation,
   type EventWindow,
@@ -30,10 +31,12 @@ import {
 } from '@le-uma/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { DisplayMenu } from '../components/DisplayMenu';
+import { DisplayBar } from '../components/DisplayBar';
+import { FillMenu } from '../components/FillMenu';
 import { StintStatusIcon } from '../components/StintStatus';
 import { button, Card, ErrorText, input, Muted } from '../components/ui';
 import { saveStints } from '../lib/api';
+import { useFillOptions } from '../lib/fillOptions';
 import { keys, useAvailability, usePace, useStints } from '../lib/queries';
 import { useNavigationGuard } from '../lib/router';
 import { resolveZone, useStintDisplay, zoneChoices } from '../lib/stintDisplay';
@@ -113,6 +116,7 @@ function StintPlanEditor({
   };
   const qc = useQueryClient();
   const [display, setDisplay] = useStintDisplay();
+  const [fillOptions, setFillOptions] = useFillOptions();
   const col = display.columns;
   const canEdit = group.permissions.manageEvents;
   const dirty = JSON.stringify(draft) !== JSON.stringify(saved);
@@ -190,19 +194,48 @@ function StintPlanEditor({
     setDraft((d) => [...d, blank(nextDriver(d))]);
     save.reset();
   };
-  /** Appends stints, rotating through the team, until the plan reaches the flag. */
+  /** Appends suggested stints (available, rested, fair) until the plan reaches the flag. */
   const fillToFlag = () => {
-    setDraft((d) => {
-      const next = [...d];
-      for (let guard = 0; guard < 300; guard++) {
-        const p = planStints(w, event, next, (id) => paceById.get(id) ?? null, average);
-        if (p.missingPace || p.uncoveredFrom === null) break;
-        next.push(blank(nextDriver(next)));
-      }
-      return next;
-    });
+    const added = suggestStints(
+      w,
+      event,
+      draft,
+      drivers.map((d) => d.id),
+      (id) => paceById.get(id) ?? null,
+      average,
+      paintOf,
+      fillOptions,
+    );
+    if (added.length === 0) return;
+    setDraft((d) => [...d, ...added.map((a) => blank(a.driverId))]);
     save.reset();
   };
+
+  const checks = plan.stints
+    .filter((p) => !p.afterFlag && p.driverId)
+    .map((p) => availabilityDuring(w, paintOf(p.driverId!), p.start, p.end));
+  const notAvailable = checks.filter((c) => c === 'unavailable').length;
+  const unsure = checks.filter((c) => c === 'maybe' || c === 'none').length;
+
+  // The longest back-to-back run, to warn when it's beyond the preferred run length.
+  let longest: { driverId: string; stints: number; ms: number } | null = null;
+  {
+    const run = plan.stints.filter((p) => !p.afterFlag);
+    for (let i = 0; i < run.length;) {
+      let j = i;
+      while (j + 1 < run.length && run[j + 1]!.driverId === run[i]!.driverId) j++;
+      const id = run[i]!.driverId;
+      if (id && (!longest || j - i + 1 > longest.stints)) {
+        longest = {
+          driverId: id,
+          stints: j - i + 1,
+          ms: run[j]!.end.getTime() - run[i]!.start.getTime(),
+        };
+      }
+      i = j + 1;
+    }
+  }
+  const longRun = longest && longest.stints > fillOptions.stintsInARow ? longest : null;
 
   const timeLabel = (at: Date, prev?: Date) =>
     formatSlotLabel(at, zone, !prev || localDayChanged(prev, at, zone));
@@ -232,6 +265,25 @@ function StintPlanEditor({
     summary = (
       <p className="text-sm text-available">
         ✓ Covers the whole race · about {plan.projectedLaps} laps by the flag
+        {(notAvailable > 0 || unsure > 0) && (
+          <span className="text-text-muted">
+            {' '}
+            ·{' '}
+            {notAvailable > 0 && (
+              <span className="text-unavailable">✕ {notAvailable} not available</span>
+            )}
+            {notAvailable > 0 && unsure > 0 && ', '}
+            {unsure > 0 && <span className="text-maybe">⚠ {unsure} maybe or no answer</span>}
+          </span>
+        )}
+        {longRun && (
+          <span className="block text-maybe">
+            <span aria-hidden>⚠ </span>
+            {people.get(longRun.driverId) ? nameOf(people.get(longRun.driverId)!) : 'A driver'}{' '}
+            drives {longRun.stints} stints in a row ({formatStintLength(longRun.ms)}). Check who
+            else could cover part of it.
+          </span>
+        )}
       </p>
     );
   }
@@ -259,13 +311,20 @@ function StintPlanEditor({
                 <button type="button" className={button.secondary} onClick={fillToFlag}>
                   Fill to the flag
                 </button>
+                <FillMenu options={fillOptions} onChange={setFillOptions} />
               </>
             )}
-            <DisplayMenu display={display} onChange={setDisplay} zones={zoneOptions} zone={zone} />
           </div>
         }
       >
         <div className="flex flex-col gap-4">
+          <DisplayBar
+            display={display}
+            onChange={setDisplay}
+            zones={zoneOptions}
+            zone={zone}
+            abbreviation={(z) => zoneAbbreviation(w.startsAt, z)}
+          />
           {summary}
 
           {draft.length > 0 && (

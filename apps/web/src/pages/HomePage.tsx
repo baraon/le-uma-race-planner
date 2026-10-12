@@ -7,7 +7,6 @@ import { formatDuration, formatRelative } from '../lib/format';
 import { keys, useGroups, useUpcomingEvents } from '../lib/queries';
 import { navigate } from '../lib/router';
 import { viewerTimeZone } from '../lib/session';
-import { TimelinePreview } from '../TimelinePreview';
 
 export function HomePage({ me }: { me: Me }) {
   const zone = viewerTimeZone(me);
@@ -70,8 +69,6 @@ export function HomePage({ me }: { me: Me }) {
           </div>
         )}
       </Card>
-
-      {upcoming.data?.length === 0 && <TimelinePreview defaultZone={zone} />}
     </>
   );
 }

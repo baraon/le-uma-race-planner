@@ -25,6 +25,9 @@ services:
     build:
       context: .
       dockerfile: docker/api.Dockerfile
+      args:
+        # Shown by /api/health; the deploy command passes the git commit.
+        APP_VERSION: ${APP_VERSION:-dev}
     restart: unless-stopped
     environment:
       NODE_ENV: production

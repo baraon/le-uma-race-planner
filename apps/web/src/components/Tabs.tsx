@@ -22,9 +22,12 @@ export function Tabs({ tabs, label }: { tabs: Tab[]; label: string }) {
   const refs = useRef(new Map<string, HTMLButtonElement>());
   const base = useId();
 
-  // Back/forward between hash changes switches tabs too.
+  // Back/forward between hash changes switches tabs too. Other hashes (in-page anchors) don't.
   useEffect(() => {
-    const onHash = () => setActive(tabFromHash(tabs));
+    const onHash = () => {
+      const hash = window.location.hash.slice(1);
+      if (hash === '' || tabs.some((t) => t.id === hash)) setActive(tabFromHash(tabs));
+    };
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
   }, [tabs]);

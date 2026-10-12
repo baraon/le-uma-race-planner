@@ -64,10 +64,10 @@ export function axisMarks(w: EventWindow, zone: string, from = 0, to = slotCount
 
   // Every hour for short spans; every 2, 3, ... hours for long ones (about a dozen labels).
   const step = 4 * Math.max(1, Math.ceil((to - from) / 4 / 12));
-  const daySlots = new Set(days.map((d) => d.slot));
   const ticks: AxisTick[] = [];
   for (let i = from; i < to; i += step) {
-    if (daySlots.has(i)) continue; // the day marker labels this spot
+    // The day marker labels its own spot; ticks too close to it would overlap its label.
+    if (days.some((d) => Math.abs(d.slot - i) < step * 0.75)) continue;
     ticks.push({ slot: i, label: formatSlotLabel(slotStart(w, i), zone, i === from) });
   }
   return { ticks, days, clockChanges };

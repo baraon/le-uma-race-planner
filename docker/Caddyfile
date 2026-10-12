@@ -1,7 +1,12 @@
-# SITE_ADDRESS is your domain (e.g. planner.example.com) for automatic HTTPS,
-# or ":80" to serve plain HTTP before a domain is chosen.
+# SITE_ADDRESS is the domain(s) for automatic HTTPS, e.g. "leumaplanner.com, www.leumaplanner.com",
+# or ":80" to serve plain HTTP (no domain yet, or behind a tunnel that terminates HTTPS).
 {$SITE_ADDRESS::80} {
 	encode zstd gzip
+
+	# One canonical address: www.<domain> redirects to <domain>, so cookies, the Origin check
+	# and the Discord redirect all see a single origin.
+	@www header_regexp www Host ^www\.(.+)$
+	redir @www https://{re.www.1}{uri} permanent
 
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"

@@ -5,8 +5,9 @@ plan and what "done" means for each phase. Keep both files up to date when decis
 
 ## What this is
 
-**Le Uma Race Planner** (repo `baraon/lmu-race-planner`, public, MIT): a team planning tool for
-endurance races in the sim racing game **Le Mans Ultimate**. Inspired by iRacePlan's "Driver
+**Le Uma Race Planner** (repo `baraon/le-uma-race-planner`, public, MIT): a team planning tool for
+sim endurance races. Owner's choice: never name the game itself (no "Le Mans Ultimate" or
+"LMU") in user-facing text, names or identifiers; "Le Mans" the race is fine. Inspired by iRacePlan's "Driver
 Availabilities" page. v1 does one thing well: drivers mark when they can race on a shared timeline
 for an event, and everyone sees it correctly in their own timezone.
 
@@ -121,12 +122,12 @@ Run `pnpm format` before committing; CI fails on Prettier differences.
 
 ## Owner's environment
 
-- Windows. Repo at `C:\Users\galle\Projects\lmu-race-planner`. Docker hot reload is unreliable
+- Windows. Repo at `C:\Users\galle\Projects\lmu-race-planner` (the local folder predates the rename). Docker hot reload is unreliable
   from Windows folders; set `VITE_POLL=true` in `.env` if edits don't show up (or use WSL). The
   API's `tsx watch` doesn't see edits either: `docker compose restart api` after changing it.
 - API tests that need Postgres skip without a database URL. In the dev stack run
-  `docker compose exec api pnpm --filter @lmu/api test`: they use `TEST_DATABASE_URL`
-  (`lmu_test`, created automatically), never the dev data. CI uses its throwaway `DATABASE_URL`.
+  `docker compose exec api pnpm --filter @le-uma/api test`: they use `TEST_DATABASE_URL`
+  (`leuma_test`, created automatically), never the dev data. CI uses its throwaway `DATABASE_URL`.
 - `.env` (git-ignored) holds `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `SESSION_SECRET`, etc.
   Discord redirect URI registered: `http://localhost:5173/auth/discord/callback`.
 

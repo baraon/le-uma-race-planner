@@ -14,7 +14,7 @@ import {
   type Paint,
   type RaceEvent,
   type UserSummary,
-} from '@lmu/shared';
+} from '@le-uma/shared';
 import { Fragment, useEffect, useState, type PointerEvent, type ReactNode } from 'react';
 import { slotClass, statusLabel } from '../components/status';
 import {

@@ -1,4 +1,4 @@
-import { detectTimeZone, type Me } from '@lmu/shared';
+import { detectTimeZone, type Me } from '@le-uma/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 import { getMe, logout, updateMe } from './api';

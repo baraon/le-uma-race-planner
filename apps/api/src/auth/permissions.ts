@@ -2,7 +2,7 @@
  * Group authorization. Every group-scoped endpoint loads the caller's membership row and checks
  * it here; non-members get 404 (so group IDs don't leak), members without the flag get 403.
  */
-import type { GroupRole, Permission, Permissions } from '@lmu/shared';
+import type { GroupRole, Permission, Permissions } from '@le-uma/shared';
 import { and, eq } from 'drizzle-orm';
 import type { Db } from '../db/client';
 import { groupMembers } from '../db/schema';

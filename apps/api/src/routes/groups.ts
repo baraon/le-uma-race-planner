@@ -7,7 +7,7 @@ import {
   type GroupDetail,
   type GroupSummary,
   type Invite,
-} from '@lmu/shared';
+} from '@le-uma/shared';
 import { and, asc, eq, sql } from 'drizzle-orm';
 import type { FastifyPluginAsync } from 'fastify';
 import { requireUser } from '../auth/authenticate';

@@ -6,7 +6,7 @@ import {
   invitePreviewSchema,
   type GroupDetail,
   type Permissions,
-} from '@lmu/shared';
+} from '@le-uma/shared';
 import { eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';

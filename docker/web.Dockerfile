@@ -8,13 +8,13 @@ WORKDIR /app
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml* ./
 COPY packages/shared/package.json packages/shared/
 COPY apps/web/package.json apps/web/
-RUN if [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile --filter "@lmu/web..."; \
-    else pnpm install --filter "@lmu/web..."; fi
+RUN if [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile --filter "@le-uma/web..."; \
+    else pnpm install --filter "@le-uma/web..."; fi
 
 COPY tsconfig.base.json ./
 COPY packages/shared packages/shared
 COPY apps/web apps/web
-RUN pnpm --filter @lmu/web build
+RUN pnpm --filter @le-uma/web build
 
 FROM caddy:2-alpine
 COPY docker/Caddyfile /etc/caddy/Caddyfile

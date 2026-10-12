@@ -4,7 +4,7 @@ import {
   timeZoneSchema,
   zoneAbbreviation,
   type Me,
-} from '@lmu/shared';
+} from '@le-uma/shared';
 import { useState } from 'react';
 import { TimeZoneSelect } from './components/TimeZoneSelect';
 import { useUpdateMe, viewerTimeZone } from './lib/session';

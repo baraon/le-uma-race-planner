@@ -57,7 +57,7 @@ importers:
         specifier: ^3.25.0
         version: 3.25.76
     devDependencies:
-      '@lmu/shared':
+      '@le-uma/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       '@types/node':
@@ -81,7 +81,7 @@ importers:
 
   apps/web:
     dependencies:
-      '@lmu/shared':
+      '@le-uma/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       '@tanstack/react-query':

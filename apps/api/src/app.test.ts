@@ -1,4 +1,4 @@
-import { healthResponseSchema } from '@lmu/shared';
+import { healthResponseSchema } from '@le-uma/shared';
 import { describe, expect, it } from 'vitest';
 import { buildApp } from './app';
 import { loadConfig } from './config';

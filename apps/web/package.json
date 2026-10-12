@@ -1,5 +1,5 @@
 {
-  "name": "@lmu/web",
+  "name": "@le-uma/web",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -11,7 +11,7 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@lmu/shared": "workspace:*",
+    "@le-uma/shared": "workspace:*",
     "@tanstack/react-query": "^5.75.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

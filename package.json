@@ -1,8 +1,8 @@
 {
-  "name": "lmu-race-planner",
+  "name": "le-uma-race-planner",
   "version": "0.1.0",
   "private": true,
-  "description": "Driver availability planning for Le Mans Ultimate endurance races, across timezones.",
+  "description": "Driver availability planning for sim endurance races, across timezones.",
   "type": "module",
   "packageManager": "pnpm@10.28.0",
   "engines": {
@@ -18,7 +18,7 @@
     "test": "pnpm -r test",
     "test:timezones": "node scripts/test-timezones.mjs",
     "build": "pnpm -r build",
-    "db:migrate": "pnpm --filter @lmu/api db:migrate"
+    "db:migrate": "pnpm --filter @le-uma/api db:migrate"
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",

@@ -1,4 +1,4 @@
-import type { Me } from '@lmu/shared';
+import type { Me } from '@le-uma/shared';
 import { linkClick, navigate } from './lib/router';
 import { useLogout } from './lib/session';
 

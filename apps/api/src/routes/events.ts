@@ -2,7 +2,7 @@
  * Events (races). Times cross the API as UTC ISO strings; the database stores timestamptz.
  * Any member of the group can see its events; creating and editing needs `manageEvents`.
  */
-import { eventInputSchema, type RaceEvent } from '@lmu/shared';
+import { eventInputSchema, type RaceEvent } from '@le-uma/shared';
 import { and, asc, eq, gt, inArray, sql, type SQL } from 'drizzle-orm';
 import type { FastifyPluginAsync } from 'fastify';
 import { requireUser } from '../auth/authenticate';

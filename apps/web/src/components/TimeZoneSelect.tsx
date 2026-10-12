@@ -1,4 +1,4 @@
-import { zoneOffsetMinutes } from '@lmu/shared';
+import { zoneOffsetMinutes } from '@le-uma/shared';
 import { useMemo } from 'react';
 import { input } from './ui';
 

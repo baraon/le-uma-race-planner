@@ -2,7 +2,7 @@
  * Editor-only painting helpers. Availability is stored and painted in 15-minute slots; long
  * races wrap the timeline onto several rows.
  */
-import type { AvailabilityStatus, Paint } from '@lmu/shared';
+import type { AvailabilityStatus, Paint } from '@le-uma/shared';
 
 /** Paints slots `a` through `b` (inclusive, either order) with `status`. */
 export function paintRange(

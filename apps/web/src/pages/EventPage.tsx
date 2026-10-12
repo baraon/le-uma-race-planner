@@ -17,6 +17,7 @@ import { navigate } from '../lib/router';
 import { viewerTimeZone } from '../lib/session';
 import { AvailabilitySection } from './AvailabilityEditor';
 import { PaceCard } from './PaceCard';
+import { StintPlanCard } from './StintPlanCard';
 import { useDocumentTitle } from '../lib/title';
 
 function raceWindow(e: RaceEvent) {
@@ -133,6 +134,7 @@ export function EventPage({ eventId, me }: { eventId: string; me: Me }) {
 
       {group.data && <AvailabilitySection event={e} group={group.data} me={me} />}
       {group.data && <PaceCard event={e} group={group.data} me={me} />}
+      {group.data && <StintPlanCard event={e} group={group.data} me={me} />}
     </>
   );
 }

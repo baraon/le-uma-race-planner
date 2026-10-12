@@ -1,6 +1,7 @@
 import {
   availabilityRowSchema,
   paceRowSchema,
+  stintSchema,
   createdInviteSchema,
   eventSchema,
   groupDetailSchema,
@@ -13,6 +14,7 @@ import {
   type Me,
   type Permissions,
   type SavePace,
+  type Stint,
   type SlotBlock,
   type UpdateMe,
 } from '@le-uma/shared';
@@ -147,3 +149,9 @@ export const savePace = (eventId: string, userId: string, pace: SavePace) =>
   request('PUT', `/api/events/${eventId}/pace/${userId}`, parseWith(paceRowSchema), pace);
 export const deletePace = (eventId: string, userId: string) =>
   request('DELETE', `/api/events/${eventId}/pace/${userId}`, ignore);
+
+// Stint plan
+export const getStints = (eventId: string) =>
+  request('GET', `/api/events/${eventId}/stints`, parseWith(z.array(stintSchema)));
+export const saveStints = (eventId: string, stints: Stint[]) =>
+  request('PUT', `/api/events/${eventId}/stints`, parseWith(z.array(stintSchema)), { stints });

@@ -212,6 +212,19 @@ export const savePaceSchema = z
   })
   .strict();
 
+/** One stint of the plan, as stored: times are computed, never saved. */
+export const stintSchema = z.object({
+  driverId: uuid.nullable(),
+  spotterId: uuid.nullable(),
+  lapsOverride: z.number().int().min(1).max(1000).nullable(),
+  lapMsOverride: z.number().int().min(10_000).max(1_800_000).nullable(),
+  extraPitSeconds: z.number().min(0).max(3600),
+  notes: z.string().max(500).nullable(),
+});
+
+/** Saving replaces the event's whole plan, in order. */
+export const saveStintsSchema = z.object({ stints: z.array(stintSchema).max(300) }).strict();
+
 export type SaveAvailability = z.infer<typeof saveAvailabilitySchema>;
 export type HealthResponse = z.infer<typeof healthResponseSchema>;
 export type Me = z.infer<typeof meSchema>;
@@ -232,3 +245,4 @@ export type RaceEvent = z.infer<typeof eventSchema>;
 export type AvailabilityRow = z.infer<typeof availabilityRowSchema>;
 export type PaceRow = z.infer<typeof paceRowSchema>;
 export type SavePace = z.infer<typeof savePaceSchema>;
+export type Stint = z.infer<typeof stintSchema>;

@@ -32,6 +32,11 @@ Owner: Baraon (GitHub `baraon`), based in America/Chicago, develops on Windows.
   `apps/web/src/pages/AvailabilityOverview.tsx`; axis marks in `packages/shared/src/timeline.ts`;
   legal pages in `apps/web/src/pages/LegalPages.tsx` (keep them true when data handling changes).
   v1 is complete; new work is driven by owner requests.
+- **Phase 5 (stint planner): built**, awaiting the owner's check. Calculator in
+  `packages/shared/src/plan.ts` (laps, exact stint times, pit stops, availability conflicts,
+  driving totals) and `stints.ts` (laps per stint, lap-time text); track list in `tracks.ts`.
+  API: `routes/pace.ts` (pace per driver × track × class × fuel unit) and `routes/stints.ts`
+  (plan replaced whole on save). UI: `PaceCard.tsx`, `StintPlanCard.tsx` on the event page.
 - A Discord application exists; its client ID/secret are in the owner's local `.env` only.
 - Production: **https://leumaplanner.com** (registered and DNS at Squarespace). First host: a
   DigitalOcean $6/month droplet running `compose.prod.yaml`; runbook in `docs/DEPLOY.md`. The

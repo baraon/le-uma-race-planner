@@ -16,6 +16,7 @@ import { useEvent, useGroup, useInvalidateEvents } from '../lib/queries';
 import { navigate } from '../lib/router';
 import { viewerTimeZone } from '../lib/session';
 import { AvailabilitySection } from './AvailabilityEditor';
+import { useDocumentTitle } from '../lib/title';
 
 function raceWindow(e: RaceEvent) {
   const start = new Date(e.startsAt);
@@ -36,6 +37,7 @@ function formatSpanEnd(start: Date, end: Date, zone: string, abbreviateStart = t
 
 export function EventPage({ eventId, me }: { eventId: string; me: Me }) {
   const event = useEvent(eventId);
+  useDocumentTitle(event.data?.name);
   const group = useGroup(event.data?.groupId);
   const invalidate = useInvalidateEvents();
   const remove = useMutation({

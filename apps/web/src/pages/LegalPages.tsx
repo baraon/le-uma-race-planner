@@ -4,6 +4,7 @@
  */
 import type { ReactNode } from 'react';
 import { AppLink, button, Card } from '../components/ui';
+import { useDocumentTitle } from '../lib/title';
 
 const EFFECTIVE = '12 October 2026';
 const CONTACT = (
@@ -34,6 +35,7 @@ function List({ items }: { items: ReactNode[] }) {
 }
 
 export function TermsPage() {
+  useDocumentTitle('Terms of Service');
   return (
     <Card title="Terms of Service">
       <div className="flex flex-col gap-6">
@@ -117,6 +119,7 @@ export function TermsPage() {
 }
 
 export function PrivacyPage() {
+  useDocumentTitle('Privacy Policy');
   return (
     <Card title="Privacy Policy">
       <div className="flex flex-col gap-6">

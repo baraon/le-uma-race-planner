@@ -15,7 +15,14 @@ import {
   type RaceEvent,
   type UserSummary,
 } from '@le-uma/shared';
-import { Fragment, useEffect, useState, type PointerEvent, type ReactNode } from 'react';
+import {
+  Fragment,
+  useEffect,
+  useState,
+  type KeyboardEvent,
+  type PointerEvent,
+  type ReactNode,
+} from 'react';
 import { slotClass, statusLabel } from '../components/status';
 import {
   describeMarks,
@@ -94,6 +101,28 @@ export function AvailabilityOverview({
       ? (now.getTime() - w.startsAt.getTime()) / (15 * 60_000)
       : null;
 
+  /** Keyboard: arrows move through slots (Up/Down by a row of the wrapped layout). */
+  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    const at = hover?.slot ?? 0;
+    const to =
+      e.key === 'ArrowRight'
+        ? at + 1
+        : e.key === 'ArrowLeft'
+          ? at - 1
+          : e.key === 'ArrowDown'
+            ? at + perRow
+            : e.key === 'ArrowUp'
+              ? at - perRow
+              : e.key === 'Home'
+                ? 0
+                : e.key === 'End'
+                  ? count - 1
+                  : null;
+    if (to === null) return;
+    e.preventDefault();
+    setHover({ slot: Math.max(0, Math.min(count - 1, to)), userId: null });
+  };
+
   const onPointerOver = (e: PointerEvent<HTMLDivElement>) => {
     const cell = (e.target as HTMLElement).closest<HTMLElement>('[data-slot]');
     if (!cell) return;
@@ -136,7 +165,13 @@ export function AvailabilityOverview({
           />
 
           <div
-            className="overflow-x-auto"
+            className="overflow-x-auto rounded-md"
+            tabIndex={0}
+            role="group"
+            aria-label={`${event.teamName} availability grid. Use the arrow keys to move between 15-minute slots; details are announced above the grid.`}
+            onKeyDown={onKeyDown}
+            onFocus={() => setHover((h) => h ?? { slot: 0, userId: null })}
+            onBlur={() => setHover(null)}
             onPointerOver={onPointerOver}
             onPointerLeave={() => setHover(null)}
           >
@@ -291,14 +326,15 @@ function HoverDetails({
   if (!hover) {
     return (
       <p className="min-h-12 text-sm text-text-muted">
-        Hover over (or tap) a slot to see each driver&apos;s status and local time.
+        Hover over or tap a slot (or focus the grid and use the arrow keys) to see each
+        driver&apos;s status and local time.
       </p>
     );
   }
   const { slot } = hover;
   const n = counts[slot] ?? 0;
   return (
-    <div className="min-h-12 text-sm">
+    <div className="min-h-12 text-sm" aria-live="polite">
       <p>
         <span className="font-medium">{describeSlots(w, slot, slot + 1, zone)}</span>
         {zone !== viewerZone && (

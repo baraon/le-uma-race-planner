@@ -61,22 +61,18 @@ production Dockerfiles and Caddy, sample timeline with timezone switcher on the 
   in 15-minute slots; coarser brush sizes were tried and dropped as unnecessary once rows wrapped.
 - **Done when:** drivers in different timezones paint the same slots and see identical results.
 
-### Phase 4 — Overview and launch (in progress)
+### Phase 4 — Overview and launch ✅
 
-- Built: overview with driver rows, coverage row against an optional per-event "drivers needed
-  at once" (`events.min_drivers`), written gap list, zone switcher (you, UTC, track, any
-  teammate), hover/tap details, "now" marker, date marks at local midnight, clock-change badges,
+- Overview: driver rows, coverage row against an optional "drivers needed at once"
+  (`events.min_drivers`), written gap list, zone switcher (you, UTC, track, any teammate),
+  hover/tap/keyboard details, "now" marker, date marks at local midnight, clock-change badges,
   6-hour rows for long races.
-- Next: accessibility pass, then the production deploy.
-
-- Overview: driver rows, coverage row, timezone switcher, hover details (time for you and for
-  that driver), "now" marker during the race, day labels at local midnight, DST hours labelled.
-- Accessibility pass (status colors paired with patterns/icons, keyboard, contrast).
-- Production deploy with `compose.prod.yaml` on the owner's NVIDIA DGX Spark (ARM64 Linux),
-  HTTPS via Caddy, nightly backups with a tested restore. Needs a public route to the box
-  (e.g. Cloudflare Tunnel, Tailscale Funnel or a router port forward) and a domain; if behind a
-  tunnel, make the API trust its forwarded client IP so rate limits work per visitor.
-- **Done when:** live on the production domain with HTTPS and nightly backups.
+- Accessibility pass: axe (WCAG 2.2 A/AA) clean on every page at desktop and phone widths;
+  status colors paired with patterns; underlined in-text links; strong focus outline; skip link;
+  keyboard access to the editor and overview; per-page titles.
+- Live at https://leumaplanner.com (DigitalOcean London, HTTPS via Caddy). Nightly backups were
+  skipped by the owner's choice; `docs/DEPLOY.md` has the manual `pg_dump` command.
+- Terms of Service and Privacy Policy published (`/terms`, `/privacy`).
 
 ## Required timezone test cases (keep these passing)
 

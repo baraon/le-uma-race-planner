@@ -52,6 +52,12 @@ export function App() {
 
   return (
     <div className="mx-auto flex min-h-screen max-w-5xl flex-col gap-8 px-4 py-10 sm:px-8">
+      <a
+        href="#main"
+        className="sr-only rounded-md bg-accent px-3 py-2 text-sm font-medium text-white focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50"
+      >
+        Skip to content
+      </a>
       <header className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <h1 className="text-2xl font-black italic tracking-tight uppercase">
@@ -64,7 +70,9 @@ export function App() {
         <div className="livery-stripe h-1.5 -skew-x-[20deg] rounded-sm" aria-hidden />
       </header>
 
-      <main className="flex flex-col gap-8">{page}</main>
+      <main id="main" tabIndex={-1} className="flex flex-col gap-8 focus:outline-none">
+        {page}
+      </main>
 
       <LegalFooter />
       <DialogHost />

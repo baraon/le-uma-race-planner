@@ -20,6 +20,7 @@ import { createEvent, updateEvent } from '../lib/api';
 import { useEvent, useGroup, useInvalidateEvents } from '../lib/queries';
 import { navigate } from '../lib/router';
 import { viewerTimeZone } from '../lib/session';
+import { useDocumentTitle } from '../lib/title';
 
 /** Endurance circuits and their local zones, to pre-fill "track time". */
 const TRACKS: Record<string, string> = {
@@ -40,6 +41,7 @@ const TRACKS: Record<string, string> = {
 const CAR_CLASSES = ['Hypercar', 'LMP2', 'LMP3', 'LMGT3', 'GTE'];
 
 export function NewEventPage({ groupId, me }: { groupId: string; me: Me }) {
+  useDocumentTitle('New event');
   const group = useGroup(groupId);
   if (group.isPending) return <Muted>Loading…</Muted>;
   if (group.error) return <ErrorText error={group.error} />;
@@ -49,6 +51,7 @@ export function NewEventPage({ groupId, me }: { groupId: string; me: Me }) {
 }
 
 export function EditEventPage({ eventId, me }: { eventId: string; me: Me }) {
+  useDocumentTitle('Edit event');
   const event = useEvent(eventId);
   const group = useGroup(event.data?.groupId);
   if (event.isPending || group.isPending) return <Muted>Loading…</Muted>;

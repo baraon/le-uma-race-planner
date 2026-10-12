@@ -7,8 +7,10 @@ import { formatDuration, formatRelative } from '../lib/format';
 import { keys, useGroups, useUpcomingEvents } from '../lib/queries';
 import { navigate } from '../lib/router';
 import { viewerTimeZone } from '../lib/session';
+import { useDocumentTitle } from '../lib/title';
 
 export function HomePage({ me }: { me: Me }) {
+  useDocumentTitle(null);
   const zone = viewerTimeZone(me);
   const groups = useGroups();
   const upcoming = useUpcomingEvents();

@@ -28,9 +28,10 @@ Owner: Baraon (GitHub `baraon`), based in America/Chicago, develops on Windows.
   `apps/api/src/db/availability.ts`; editor in `apps/web/src/pages/AvailabilityEditor.tsx`
   (row wrapping in `apps/web/src/lib/paint.ts`). Moving an event trims
   availability to the new window in the same transaction (deferred DB check at commit).
-- **Phase 4 (overview and launch): in progress.** Overview in
-  `apps/web/src/pages/AvailabilityOverview.tsx`; axis marks (midnight, clock changes) in
-  `packages/shared/src/timeline.ts`. Next: accessibility pass, then deploy.
+- **Phase 4 (overview and launch): done.** Overview in
+  `apps/web/src/pages/AvailabilityOverview.tsx`; axis marks in `packages/shared/src/timeline.ts`;
+  legal pages in `apps/web/src/pages/LegalPages.tsx` (keep them true when data handling changes).
+  v1 is complete; new work is driven by owner requests.
 - A Discord application exists; its client ID/secret are in the owner's local `.env` only.
 - Production: **https://leumaplanner.com** (registered and DNS at Squarespace). First host: a
   DigitalOcean $6/month droplet running `compose.prod.yaml`; runbook in `docs/DEPLOY.md`. The
@@ -133,5 +134,5 @@ Run `pnpm format` before committing; CI fails on Prettier differences.
 
 ## Open items
 
-- Nightly database backups with a tested restore (Phase 4).
+- Backups: skipped by the owner's choice (manual `pg_dump` in `docs/DEPLOY.md`).
 - Decide whether Dependabot should be limited to minor/patch updates if PR volume is annoying.

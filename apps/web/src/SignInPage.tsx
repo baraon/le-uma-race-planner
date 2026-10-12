@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AppLink, button } from './components/ui';
+import { useDocumentTitle } from './lib/title';
 
 const loginMessages: Record<string, string> = {
   denied: 'Discord sign-in was cancelled.',
@@ -26,6 +27,7 @@ function loginHref(): string {
 }
 
 export function SignInPage() {
+  useDocumentTitle('Sign in');
   const error = useLoginError();
   const isInvite = window.location.pathname.startsWith('/invite/');
 

@@ -11,7 +11,7 @@ export const button = {
     'inline-flex items-center justify-center gap-2 rounded-md border border-unavailable/50 px-3 py-1.5 text-sm text-unavailable hover:bg-unavailable/10 disabled:cursor-not-allowed disabled:opacity-50',
   dangerSolid:
     'inline-flex items-center justify-center gap-2 rounded-md bg-danger px-3.5 py-2 text-sm font-medium text-white hover:bg-danger/90 disabled:cursor-not-allowed disabled:opacity-50',
-  link: 'text-accent-strong underline-offset-2 hover:underline disabled:opacity-50',
+  link: 'text-accent-strong underline decoration-accent-strong/50 underline-offset-2 hover:decoration-accent-strong disabled:opacity-50',
 };
 
 export const input =

@@ -6,7 +6,7 @@ import {
   zoneAbbreviation,
   type Me,
   type RaceEvent,
-} from '@lmu/shared';
+} from '@le-uma/shared';
 import { useMutation } from '@tanstack/react-query';
 import { confirmDialog } from '../components/Dialog';
 import { AppLink, button, ErrorText, Muted } from '../components/ui';

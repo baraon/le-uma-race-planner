@@ -1,6 +1,6 @@
 import { defineConfig } from 'tsup';
 
-// Bundles the API and everything it imports (including @lmu/shared) into one file, so the
+// Bundles the API and everything it imports (including @le-uma/shared) into one file, so the
 // production image needs no node_modules at all.
 export default defineConfig({
   entry: ['src/server.ts', 'src/db/migrate-cli.ts'],

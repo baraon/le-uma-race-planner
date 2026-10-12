@@ -1,5 +1,5 @@
 /** TanStack Query hooks for groups, teams, invites and events. */
-import type { GroupDetail } from '@lmu/shared';
+import type { GroupDetail } from '@le-uma/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as api from './api';
 

@@ -1,5 +1,5 @@
 /** Invite links: `/invite/<token>` in the web app. Only the token's SHA-256 is stored. */
-import type { InvitePreview } from '@lmu/shared';
+import type { InvitePreview } from '@le-uma/shared';
 import { and, eq, sql } from 'drizzle-orm';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';

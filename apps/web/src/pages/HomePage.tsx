@@ -1,4 +1,4 @@
-import { formatDateTime, zoneAbbreviation, type Me, type RaceEvent } from '@lmu/shared';
+import { formatDateTime, zoneAbbreviation, type Me, type RaceEvent } from '@le-uma/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { AppLink, button, Card, ErrorText, input, Muted, RoleBadge } from '../components/ui';

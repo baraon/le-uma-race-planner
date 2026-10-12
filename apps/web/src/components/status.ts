@@ -1,4 +1,4 @@
-import type { AvailabilityStatus } from '@lmu/shared';
+import type { AvailabilityStatus } from '@le-uma/shared';
 
 export const statusClass: Record<AvailabilityStatus, string> = {
   available: 'slot-available',

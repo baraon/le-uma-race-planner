@@ -8,7 +8,7 @@ import type { Db } from '../db/client';
 import { sessions, users } from '../db/schema';
 import type { User } from './users';
 
-export const SESSION_COOKIE = 'lmu_session';
+export const SESSION_COOKIE = 'le_uma_session';
 export const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 /** Extend a session at most once a day, so reads don't turn into a write per request. */
 const EXTEND_AFTER_MS = 24 * 60 * 60 * 1000;

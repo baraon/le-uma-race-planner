@@ -14,7 +14,7 @@ one or more PRs merged when CI is green.
 - Every time shown in the viewer's timezone, with a switcher for UTC, track time, or any
   teammate's zone.
 
-**Not in v1:** Le Mans Ultimate data sync (schedules, results), stint/strategy planning, leagues,
+**Not in v1:** syncing data from the game (schedules, results), stint/strategy planning, leagues,
 recruitment, surveys, mobile apps, Discord bot or notifications.
 
 ## Phases

@@ -13,7 +13,7 @@ import {
   type Permissions,
   type SlotBlock,
   type UpdateMe,
-} from '@lmu/shared';
+} from '@le-uma/shared';
 import { z } from 'zod';
 
 /** A non-2xx reply from our API, carrying the server's message for display. */

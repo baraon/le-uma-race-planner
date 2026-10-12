@@ -2,7 +2,7 @@
  * Login, session and profile tests against a real Postgres (CI provides one; skipped without
  * DATABASE_URL) and a fake Discord: nothing here touches the network.
  */
-import { meSchema } from '@lmu/shared';
+import { meSchema } from '@le-uma/shared';
 import { eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -88,11 +88,11 @@ describe.skipIf(!DATABASE_URL)('Discord login and sessions', () => {
   async function login(app: FastifyInstance, extraCookies: Record<string, string> = {}) {
     const start = await app.inject({ method: 'GET', url: '/auth/discord' });
     const state = new URL(start.headers.location as string).searchParams.get('state')!;
-    const stateCookie = start.cookies.find((c) => c.name === 'lmu_oauth_state')!;
+    const stateCookie = start.cookies.find((c) => c.name === 'le_uma_oauth_state')!;
     return app.inject({
       method: 'GET',
       url: `/auth/discord/callback?code=good-code&state=${encodeURIComponent(state)}`,
-      headers: { cookie: cookieHeader({ lmu_oauth_state: stateCookie.value, ...extraCookies }) },
+      headers: { cookie: cookieHeader({ le_uma_oauth_state: stateCookie.value, ...extraCookies }) },
     });
   }
 
@@ -112,7 +112,7 @@ describe.skipIf(!DATABASE_URL)('Discord login and sessions', () => {
     expect(url.searchParams.get('state')).toMatch(/^[\w-]{43}$/);
     expect(url.searchParams.has('permissions')).toBe(false);
 
-    const stateCookie = res.cookies.find((c) => c.name === 'lmu_oauth_state')!;
+    const stateCookie = res.cookies.find((c) => c.name === 'le_uma_oauth_state')!;
     expect(stateCookie).toMatchObject({ httpOnly: true, secure: true, sameSite: 'Lax' });
     // Signed, so a value planted by someone else won't verify.
     expect(stateCookie.value).not.toBe(url.searchParams.get('state'));
@@ -187,12 +187,12 @@ describe.skipIf(!DATABASE_URL)('Discord login and sessions', () => {
     const discord = fakeDiscord();
     const app = await makeApp(discord.client);
     const start = await app.inject({ method: 'GET', url: '/auth/discord' });
-    const stateCookie = start.cookies.find((c) => c.name === 'lmu_oauth_state')!;
+    const stateCookie = start.cookies.find((c) => c.name === 'le_uma_oauth_state')!;
 
     const forged = await app.inject({
       method: 'GET',
       url: '/auth/discord/callback?code=good-code&state=attacker-state',
-      headers: { cookie: `lmu_oauth_state=${stateCookie.value}` },
+      headers: { cookie: `le_uma_oauth_state=${stateCookie.value}` },
     });
     expect(forged.headers.location).toBe(`${APP_URL}/?login=failed`);
     expect(sessionFrom(forged)).toBeUndefined();
@@ -207,7 +207,7 @@ describe.skipIf(!DATABASE_URL)('Discord login and sessions', () => {
     const unsigned = await app.inject({
       method: 'GET',
       url: '/auth/discord/callback?code=good-code&state=planted',
-      headers: { cookie: 'lmu_oauth_state=planted' },
+      headers: { cookie: 'le_uma_oauth_state=planted' },
     });
     expect(unsigned.headers.location).toBe(`${APP_URL}/?login=failed`);
 
@@ -227,11 +227,11 @@ describe.skipIf(!DATABASE_URL)('Discord login and sessions', () => {
 
     const start = await app.inject({ method: 'GET', url: '/auth/discord' });
     const state = new URL(start.headers.location as string).searchParams.get('state')!;
-    const stateCookie = start.cookies.find((c) => c.name === 'lmu_oauth_state')!;
+    const stateCookie = start.cookies.find((c) => c.name === 'le_uma_oauth_state')!;
     const failed = await app.inject({
       method: 'GET',
       url: `/auth/discord/callback?code=bad-code&state=${state}`,
-      headers: { cookie: `lmu_oauth_state=${stateCookie.value}` },
+      headers: { cookie: `le_uma_oauth_state=${stateCookie.value}` },
     });
     expect(failed.headers.location).toBe(`${APP_URL}/?login=failed`);
     expect(sessionFrom(failed)).toBeUndefined();
@@ -246,11 +246,11 @@ describe.skipIf(!DATABASE_URL)('Discord login and sessions', () => {
         url: `/auth/discord?returnTo=${encodeURIComponent(returnTo)}`,
       });
       const state = new URL(start.headers.location as string).searchParams.get('state')!;
-      const stateCookie = start.cookies.find((c) => c.name === 'lmu_oauth_state')!;
+      const stateCookie = start.cookies.find((c) => c.name === 'le_uma_oauth_state')!;
       const res = await app.inject({
         method: 'GET',
         url: `/auth/discord/callback?code=good-code&state=${encodeURIComponent(state)}`,
-        headers: { cookie: `lmu_oauth_state=${stateCookie.value}` },
+        headers: { cookie: `le_uma_oauth_state=${stateCookie.value}` },
       });
       return res.headers.location;
     };

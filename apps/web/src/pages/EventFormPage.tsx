@@ -11,7 +11,7 @@ import {
   type GroupDetail,
   type Me,
   type RaceEvent,
-} from '@lmu/shared';
+} from '@le-uma/shared';
 import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import { TimeZoneSelect } from '../components/TimeZoneSelect';
@@ -21,7 +21,7 @@ import { useEvent, useGroup, useInvalidateEvents } from '../lib/queries';
 import { navigate } from '../lib/router';
 import { viewerTimeZone } from '../lib/session';
 
-/** Le Mans Ultimate circuits and their local zones, to pre-fill "track time". */
+/** Endurance circuits and their local zones, to pre-fill "track time". */
 const TRACKS: Record<string, string> = {
   'Circuit de la Sarthe (Le Mans)': 'Europe/Paris',
   'Spa-Francorchamps': 'Europe/Brussels',
@@ -242,7 +242,7 @@ function EventForm({ group, me, event }: { group: GroupDetail; me: Me; event?: R
             <span className="font-medium">Track (optional)</span>
             <input
               value={track}
-              list="lmu-tracks"
+              list="track-options"
               onChange={(e) => {
                 setTrack(e.target.value);
                 const zone = TRACKS[e.target.value];
@@ -251,7 +251,7 @@ function EventForm({ group, me, event }: { group: GroupDetail; me: Me; event?: R
               maxLength={80}
               className={input}
             />
-            <datalist id="lmu-tracks">
+            <datalist id="track-options">
               {Object.keys(TRACKS).map((t) => (
                 <option key={t} value={t} />
               ))}
@@ -261,12 +261,12 @@ function EventForm({ group, me, event }: { group: GroupDetail; me: Me; event?: R
             <span className="font-medium">Car class (optional)</span>
             <input
               value={carClass}
-              list="lmu-classes"
+              list="class-options"
               onChange={(e) => setCarClass(e.target.value)}
               maxLength={40}
               className={input}
             />
-            <datalist id="lmu-classes">
+            <datalist id="class-options">
               {CAR_CLASSES.map((c) => (
                 <option key={c} value={c} />
               ))}

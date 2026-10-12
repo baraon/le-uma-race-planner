@@ -1,4 +1,4 @@
-import { updateMeSchema, type Me } from '@lmu/shared';
+import { updateMeSchema, type Me } from '@le-uma/shared';
 import { eq, sql } from 'drizzle-orm';
 import type { FastifyPluginAsync } from 'fastify';
 import { requireUser } from '../auth/authenticate';

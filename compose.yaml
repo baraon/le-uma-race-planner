@@ -1,7 +1,7 @@
 # Development stack: `docker compose up`, then open http://localhost:5173
 # Source is mounted into the containers, so edits hot-reload.
 
-name: lmu-race-planner
+name: le-uma-race-planner
 
 x-node: &node
   image: node:22-alpine
@@ -22,9 +22,9 @@ services:
   db:
     image: postgres:17-alpine
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-lmu}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-lmu-dev-password}
-      POSTGRES_DB: ${POSTGRES_DB:-lmu}
+      POSTGRES_USER: ${POSTGRES_USER:-leuma}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-leuma-dev-password}
+      POSTGRES_DB: ${POSTGRES_DB:-leuma}
     ports:
       - '5432:5432'
     volumes:
@@ -42,16 +42,16 @@ services:
 
   api:
     <<: *node
-    command: sh -c "corepack enable && pnpm --filter @lmu/api dev"
+    command: sh -c "corepack enable && pnpm --filter @le-uma/api dev"
     env_file:
       - path: .env
         required: false
     environment:
       <<: *node-env
       NODE_ENV: development
-      DATABASE_URL: postgres://${POSTGRES_USER:-lmu}:${POSTGRES_PASSWORD:-lmu-dev-password}@db:5432/${POSTGRES_DB:-lmu}
+      DATABASE_URL: postgres://${POSTGRES_USER:-leuma}:${POSTGRES_PASSWORD:-leuma-dev-password}@db:5432/${POSTGRES_DB:-leuma}
       # API tests run in the dev stack use their own database, never your dev data.
-      TEST_DATABASE_URL: postgres://${POSTGRES_USER:-lmu}:${POSTGRES_PASSWORD:-lmu-dev-password}@db:5432/lmu_test
+      TEST_DATABASE_URL: postgres://${POSTGRES_USER:-leuma}:${POSTGRES_PASSWORD:-leuma-dev-password}@db:5432/leuma_test
       SESSION_SECRET: ${SESSION_SECRET:-dev-only-session-secret-change-me-0000000000}
       APP_URL: ${APP_URL:-http://localhost:5173}
       RUN_MIGRATIONS: 'true'
@@ -65,7 +65,7 @@ services:
 
   web:
     <<: *node
-    command: sh -c "corepack enable && pnpm --filter @lmu/web dev --host 0.0.0.0"
+    command: sh -c "corepack enable && pnpm --filter @le-uma/web dev --host 0.0.0.0"
     environment:
       <<: *node-env
       API_PROXY_TARGET: http://api:3000

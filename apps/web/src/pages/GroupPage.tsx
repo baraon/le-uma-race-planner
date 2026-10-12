@@ -8,7 +8,7 @@ import {
   type Member,
   type Permission,
   type Team,
-} from '@lmu/shared';
+} from '@le-uma/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { confirmDialog, promptDialog } from '../components/Dialog';

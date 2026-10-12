@@ -9,15 +9,15 @@ WORKDIR /app
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml* ./
 COPY packages/shared/package.json packages/shared/
 COPY apps/api/package.json apps/api/
-RUN if [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile --filter "@lmu/api..."; \
-    else pnpm install --filter "@lmu/api..."; fi
+RUN if [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile --filter "@le-uma/api..."; \
+    else pnpm install --filter "@le-uma/api..."; fi
 
 COPY tsconfig.base.json ./
 COPY packages/shared packages/shared
 COPY apps/api apps/api
 ARG APP_VERSION=dev
 ENV APP_VERSION=$APP_VERSION
-RUN pnpm --filter @lmu/api build
+RUN pnpm --filter @le-uma/api build
 
 FROM node:22-alpine AS runtime
 ENV NODE_ENV=production \

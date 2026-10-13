@@ -81,6 +81,11 @@ export function EventPage({ eventId, me }: { eventId: string; me: Me }) {
               e.track,
               e.carClass,
               formatDuration(e.durationMinutes),
+              e.qualifyingMinutes > 0 &&
+                `qualifying from ${formatSlotLabel(
+                  new Date(start.getTime() - e.qualifyingMinutes * 60_000),
+                  zone,
+                )}`,
               e.minDrivers && `${e.minDrivers} drivers needed at once`,
             ]
               .filter(Boolean)

@@ -5,6 +5,7 @@
  * final say.
  */
 import {
+  availabilityWindow,
   intervalToSlotRange,
   saveAvailabilitySchema,
   slotCount,
@@ -23,10 +24,9 @@ import { teamMembers } from '../db/schema';
 import { eventContext } from './events';
 import { conflict, forbidden, HttpError, idParam, parseBody, pgCode } from './http';
 
-const windowOf = (e: RaceEvent): EventWindow => ({
-  startsAt: new Date(e.startsAt),
-  durationMinutes: e.durationMinutes,
-});
+/** Qualifying (when the event includes it) plus the race. */
+const windowOf = (e: RaceEvent): EventWindow =>
+  availabilityWindow({ ...e, startsAt: new Date(e.startsAt) });
 
 /** Groups stored blocks into one row per driver, in slot terms. */
 function toRows(stored: StoredBlock[], w: EventWindow): AvailabilityRow[] {
@@ -72,7 +72,7 @@ export const availabilityRoutes: FastifyPluginAsync<{ db: Db }> = async (app, { 
     const w = windowOf(event);
     const count = slotCount(w);
     if (blocks.some((b) => b.endSlot > count)) {
-      throw new HttpError(400, `This race has ${count} slots; a block goes past the end`);
+      throw new HttpError(400, `This event has ${count} slots; a block goes past the end`);
     }
     const intervals = blocks.map((b) => ({
       ...slotRangeToInterval(w, b.startSlot, b.endSlot),

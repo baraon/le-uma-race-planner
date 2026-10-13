@@ -41,6 +41,30 @@ export function eventEnd(w: EventWindow): Date {
   return new Date(w.startsAt.getTime() + w.durationMinutes * MINUTE_MS);
 }
 
+/** How long qualifying is when an event includes it, unless the organiser picks another length. */
+export const DEFAULT_QUALIFYING_MINUTES = 60;
+
+/**
+ * The window drivers mark availability for: the race, plus qualifying before the green flag when
+ * the event includes it. Qualifying is a whole number of slots, so the grid still lines up with
+ * the green flag; slot 0 of this window is the start of qualifying.
+ */
+export function availabilityWindow(e: {
+  startsAt: Date;
+  durationMinutes: number;
+  qualifyingMinutes: number;
+}): EventWindow {
+  return {
+    startsAt: new Date(e.startsAt.getTime() - e.qualifyingMinutes * MINUTE_MS),
+    durationMinutes: e.durationMinutes + e.qualifyingMinutes,
+  };
+}
+
+/** How many slots of the availability window are qualifying (the green flag is the next one). */
+export function qualifyingSlots(e: { qualifyingMinutes: number }): number {
+  return e.qualifyingMinutes / SLOT_MINUTES;
+}
+
 /** Number of slots in the event. A final partial slot counts as a slot. */
 export function slotCount(w: EventWindow): number {
   return Math.ceil(w.durationMinutes / slotLength(w));

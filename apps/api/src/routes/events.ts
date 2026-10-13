@@ -2,7 +2,7 @@
  * Events (races). Times cross the API as UTC ISO strings; the database stores timestamptz.
  * Any member of the group can see its events; creating and editing needs `manageEvents`.
  */
-import { eventInputSchema, type RaceEvent } from '@le-uma/shared';
+import { availabilityWindow, eventInputSchema, type RaceEvent } from '@le-uma/shared';
 import { and, asc, eq, gt, inArray, sql, type SQL } from 'drizzle-orm';
 import type { FastifyPluginAsync } from 'fastify';
 import { requireUser } from '../auth/authenticate';
@@ -32,6 +32,7 @@ async function selectEvents(db: Db, where: SQL | undefined): Promise<RaceEvent[]
     name: event.name,
     startsAt: event.startsAt.toISOString(),
     durationMinutes: event.durationMinutes,
+    qualifyingMinutes: event.qualifyingMinutes,
     track: event.track,
     carClass: event.carClass,
     trackTimezone: event.trackTimezone,
@@ -101,17 +102,21 @@ export const eventRoutes: FastifyPluginAsync<{ db: Db }> = async (app, { db }) =
     if (!can(membership, 'manageEvents')) throw forbidden();
 
     const input = parseBody(eventInputSchema, req.body);
-    const window = { startsAt: new Date(input.startsAt), durationMinutes: input.durationMinutes };
+    const startsAt = new Date(input.startsAt);
     const moved =
-      window.startsAt.getTime() !== new Date(event.startsAt).getTime() ||
-      window.durationMinutes !== event.durationMinutes;
+      startsAt.getTime() !== new Date(event.startsAt).getTime() ||
+      input.durationMinutes !== event.durationMinutes ||
+      input.qualifyingMinutes !== event.qualifyingMinutes;
     await db.transaction(async (tx) => {
       await tx
         .update(events)
-        .set({ ...input, startsAt: window.startsAt })
+        .set({ ...input, startsAt })
         .where(eq(events.id, eventId));
-      // Saved availability keeps its real-world times, trimmed to the new race window.
-      if (moved) await clipAvailabilityToEvent(tx, eventId, window);
+      // Saved availability keeps its real-world times, trimmed to the new window (qualifying
+      // included when the event has it).
+      if (moved) {
+        await clipAvailabilityToEvent(tx, eventId, availabilityWindow({ ...input, startsAt }));
+      }
     });
     const [updated] = await selectEvents(db, eq(events.id, eventId));
     return updated;

@@ -193,4 +193,54 @@ describe.skipIf(!DATABASE_URL)('availability', () => {
     // 19:05-20:50 → slots 8 (19:05) to 15 (20:50).
     expect(after.blocks).toEqual([{ startSlot: 8, endSlot: 15, status: 'available' }]);
   });
+
+  it('opens the window early for qualifying and trims it again when qualifying is removed', async () => {
+    const { owner, driver, eventId } = await setup();
+    // 18:00-19:00 available, marked before qualifying was added.
+    await save(driver, eventId, driver.id, [{ startSlot: 0, endSlot: 4, status: 'available' }]);
+
+    const withQualifying = await call(owner, 'PUT', `/api/events/${eventId}`, {
+      ...race,
+      qualifyingMinutes: 60,
+    });
+    expect(withQualifying.json().qualifyingMinutes).toBe(60);
+    // Slots now count from the start of qualifying (17:00): the same hour is slots 4-8.
+    const [shifted] = (await call(driver, 'GET', `/api/events/${eventId}/availability`)).json();
+    expect(shifted.blocks).toEqual([{ startSlot: 4, endSlot: 8, status: 'available' }]);
+
+    // 28 slots: 4 of qualifying and 24 of race.
+    expect(
+      (await save(driver, eventId, driver.id, [{ startSlot: 0, endSlot: 29, status: 'maybe' }]))
+        .statusCode,
+    ).toBe(400);
+    const res = await save(driver, eventId, driver.id, [
+      { startSlot: 0, endSlot: 6, status: 'available' },
+      { startSlot: 27, endSlot: 28, status: 'maybe' },
+    ]);
+    expect(res.statusCode).toBe(200);
+    const stored = await db
+      .select({ period: availability.period })
+      .from(availability)
+      .where(eq(availability.userId, driver.id));
+    expect(stored.map((r) => r.period).sort()).toEqual([
+      '["2026-11-14 17:00:00+00","2026-11-14 18:30:00+00")',
+      '["2026-11-14 23:45:00+00","2026-11-15 00:00:00+00")',
+    ]);
+
+    // Without qualifying again: the hour before the green flag is cut off.
+    await call(owner, 'PUT', `/api/events/${eventId}`, race);
+    const [back] = (await call(driver, 'GET', `/api/events/${eventId}/availability`)).json();
+    expect(back.blocks).toEqual([
+      { startSlot: 0, endSlot: 2, status: 'available' },
+      { startSlot: 23, endSlot: 24, status: 'maybe' },
+    ]);
+
+    // Only whole slots, at most four hours.
+    for (const qualifyingMinutes of [50, 255]) {
+      expect(
+        (await call(owner, 'PUT', `/api/events/${eventId}`, { ...race, qualifyingMinutes }))
+          .statusCode,
+      ).toBe(400);
+    }
+  });
 });

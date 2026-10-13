@@ -1,15 +1,18 @@
 /**
- * Paint availability on the race timeline. Slots are counted from the green flag, so every
- * driver paints the same instants whatever their timezone; only the labels are local.
+ * Paint availability on the race timeline. Slots are counted from the green flag (or from the
+ * start of qualifying when the event includes it), so every driver paints the same instants
+ * whatever their timezone; only the labels are local.
  *
  * Mouse and touch: press and drag across the strip. Keyboard: arrows move, Space paints, Shift
  * + arrows paints while moving, 1/2/3 pick a status and 0 the eraser. Long races wrap onto
  * several 6-hour rows.
  */
 import {
+  availabilityWindow,
   blocksToPaint,
   formatSlotLabel,
   paintToBlocks,
+  qualifyingSlots,
   slotCount,
   slotStart,
   type AvailabilityRow,
@@ -24,7 +27,7 @@ import {
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Fragment, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import { slotClass, statusClass, statusLabel } from '../components/status';
-import { describeSlots, TimeAxis } from '../components/Timeline';
+import { describeSlots, SessionBand, TimeAxis } from '../components/Timeline';
 import { button, Card, ErrorText, Muted } from '../components/ui';
 import * as api from '../lib/api';
 import { paintRange as paintSlots, rowsFor } from '../lib/paint';
@@ -54,10 +57,7 @@ export function AvailabilitySection({
   me: Me;
 }) {
   const availability = useAvailability(event.id);
-  const w: EventWindow = {
-    startsAt: new Date(event.startsAt),
-    durationMinutes: event.durationMinutes,
-  };
+  const w = availabilityWindow({ ...event, startsAt: new Date(event.startsAt) });
   const count = slotCount(w);
   const zone = viewerTimeZone(me);
 
@@ -162,6 +162,7 @@ function PaintEditor({
   saved: AvailabilityRow | undefined;
 }) {
   const count = slotCount(w);
+  const qualifying = qualifyingSlots(event);
   const savedPaint = blocksToPaint(saved?.blocks ?? [], count);
   const rows = rowsFor(count);
   const perRow = rows[0]!.end;
@@ -291,7 +292,7 @@ function PaintEditor({
           aria-valuemin={1}
           aria-valuemax={count}
           aria-valuenow={cursor + 1}
-          aria-valuetext={`${describeSlots(w, cursor, cursor + 1, viewerZone)}: ${draft[cursor] ? statusLabel[draft[cursor]!] : 'no answer'}`}
+          aria-valuetext={`${cursor < qualifying ? 'Qualifying, ' : ''}${describeSlots(w, cursor, cursor + 1, viewerZone)}: ${draft[cursor] ? statusLabel[draft[cursor]!] : 'no answer'}`}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={endDrag}
@@ -312,6 +313,7 @@ function PaintEditor({
                 </span>
               )}
               <div style={{ width: `${((row.end - row.start) / perRow) * 100}%` }}>
+                <SessionBand qualifying={qualifying} from={row.start} to={row.end} />
                 <TimeAxis window={w} zone={viewerZone} from={row.start} to={row.end} />
                 <div
                   data-row-start={row.start}
@@ -338,7 +340,10 @@ function PaintEditor({
       </div>
 
       <p className="min-h-5 text-sm" aria-hidden>
-        <span className="text-text-muted">{describeSlots(w, shown, shown + 1, viewerZone)}</span>
+        <span className="text-text-muted">
+          {shown < qualifying && 'Qualifying · '}
+          {describeSlots(w, shown, shown + 1, viewerZone)}
+        </span>
         {theirZone && (
           <span className="text-text-muted">
             {' '}
@@ -354,7 +359,7 @@ function PaintEditor({
           className={button.secondary}
           onClick={() => paintRange(0, count - 1, 'available')}
         >
-          Available for whole race
+          {qualifying > 0 ? 'Available for qualifying and race' : 'Available for whole race'}
         </button>
         <button
           type="button"

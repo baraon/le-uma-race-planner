@@ -49,7 +49,10 @@ Owner: Baraon (GitHub `baraon`), based in America/Chicago, develops on Windows.
    never a fixed offset (`UTC-5`). Never use local-time getters (`getHours()` etc.) in shared or
    server code; use the helpers in `packages/shared/src/timezones.ts`.
 2. **Slots (availability only):** 15 minutes, counted from the event's green flag (slot 0). A
-   final partial slot counts as a slot ending at the flag. Availability periods are half-open
+   final partial slot counts as a slot ending at the flag. An event that includes qualifying
+   (`qualifying_minutes`, whole slots) opens the availability window that much earlier: slot 0 is
+   then the start of qualifying and the grid still lines up with the green flag
+   (`availabilityWindow` in `packages/shared/src/slots.ts`). The stint plan covers the race only. Availability periods are half-open
    `[start, end)`. **Stints are not slot-aligned:** their times come from laps × lap time plus pit
    stops and are exact instants, laid over the slot grid for display and conflict checks.
 3. **Discord auth: minimum permissions.** Request only the `identify` OAuth2 scope. No `email`,
@@ -76,8 +79,8 @@ Owner: Baraon (GitHub `baraon`), based in America/Chicago, develops on Windows.
 - **Team:** belongs to a group; created by the owner or admins with `can_manage_teams`.
   **Drivers assign themselves** to teams (must be group members). A user can be in many groups
   and teams.
-- **Event:** a race for a team: `starts_at` (UTC), `duration_minutes`, optional track, car class,
-  `track_timezone`. Created by owner/admins with `can_manage_events`.
+- **Event:** a race for a team: `starts_at` (UTC, the green flag), `duration_minutes`, optional
+  `qualifying_minutes` before the flag (0 = none), optional track, car class, `track_timezone`. Created by owner/admins with `can_manage_events`.
 - **Availability:** per driver per event, blocks of `available` / `maybe` / `unavailable`. A
   driver edits their own; owner/admins with `can_manage_availability` can edit anyone's. Saving
   replaces the driver's whole row for that event in one transaction. Only drivers on the event's

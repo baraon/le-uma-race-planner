@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  availabilityWindow,
   clipToWindow,
   blocksOverlap,
   blocksToPaint,
@@ -7,6 +8,7 @@ import {
   eventEnd,
   intervalToSlotRange,
   paintToBlocks,
+  qualifyingSlots,
   slotCount,
   slotIndexAt,
   slotRangeToInterval,
@@ -128,5 +130,21 @@ describe('moving an event', () => {
     expect(clipToWindow([block('2026-11-14T19:00:00Z', '2026-11-14T21:00:00Z')], partial)).toEqual([
       block('2026-11-14T19:00:00Z', '2026-11-14T19:40:00Z'),
     ]);
+  });
+});
+
+describe('availabilityWindow', () => {
+  it('is the race itself without qualifying', () => {
+    expect(availabilityWindow({ ...race, qualifyingMinutes: 0 })).toEqual(race);
+  });
+
+  it('opens earlier by the qualifying length and keeps the grid on the green flag', () => {
+    const w = availabilityWindow({ ...race, qualifyingMinutes: 60 });
+    expect(w.startsAt.toISOString()).toBe('2026-09-26T10:00:00.000Z');
+    expect(slotCount(w)).toBe(44);
+    expect(qualifyingSlots({ qualifyingMinutes: 60 })).toBe(4);
+    // The first race slot is the green flag; the end doesn't move.
+    expect(slotStart(w, 4)).toEqual(race.startsAt);
+    expect(eventEnd(w)).toEqual(eventEnd(race));
   });
 });

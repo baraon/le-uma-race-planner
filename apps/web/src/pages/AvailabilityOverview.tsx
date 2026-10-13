@@ -8,6 +8,7 @@ import {
   coverageGaps,
   eventEnd,
   formatSlotLabel,
+  qualifyingSlots,
   slotCount,
   slotStart,
   type EventWindow,
@@ -21,6 +22,7 @@ import {
   describeMarks,
   describePaint,
   describeSlots,
+  SessionBand,
   StatusLegend,
   TimeAxis,
 } from '../components/Timeline';
@@ -53,6 +55,7 @@ export function AvailabilityOverview({
   const [hover, setHover] = useState<Hover>(null);
   const now = useNow();
   const count = slotCount(w);
+  const qualifying = qualifyingSlots(event);
   const needed = event.minDrivers ?? 1;
   const paints = new Map(drivers.map((d) => [d.id, paintOf(d.id)]));
   const counts = coverage([...paints.values()], count);
@@ -121,6 +124,7 @@ export function AvailabilityOverview({
           <HoverDetails
             w={w}
             hover={hover}
+            qualifying={qualifying}
             zone={zone}
             viewerZone={viewerZone}
             drivers={drivers}
@@ -154,6 +158,7 @@ export function AvailabilityOverview({
                     className="relative"
                     style={{ width: `${((row.end - row.start) / perRow) * 100}%` }}
                   >
+                    <SessionBand qualifying={qualifying} from={row.start} to={row.end} />
                     <TimeAxis window={w} zone={zone} from={row.start} to={row.end} />
                   </div>
 
@@ -227,7 +232,7 @@ export function AvailabilityOverview({
             </div>
           </div>
 
-          <GapSummary w={w} gaps={gaps} needed={needed} zone={zone} />
+          <GapSummary w={w} gaps={gaps} needed={needed} zone={zone} qualifying={qualifying} />
           <StatusLegend />
         </div>
       )}
@@ -272,6 +277,7 @@ function RowCells({
 function HoverDetails({
   w,
   hover,
+  qualifying,
   zone,
   viewerZone,
   drivers,
@@ -281,6 +287,7 @@ function HoverDetails({
 }: {
   w: EventWindow;
   hover: Hover;
+  qualifying: number;
   zone: string;
   viewerZone: string;
   drivers: UserSummary[];
@@ -301,7 +308,10 @@ function HoverDetails({
   return (
     <div className="min-h-12 text-sm" aria-live="polite">
       <p>
-        <span className="font-medium">{describeSlots(w, slot, slot + 1, zone)}</span>
+        <span className="font-medium">
+          {slot < qualifying && 'Qualifying · '}
+          {describeSlots(w, slot, slot + 1, zone)}
+        </span>
         {zone !== viewerZone && (
           <span className="text-text-muted">
             {' '}
@@ -337,17 +347,19 @@ function GapSummary({
   gaps,
   needed,
   zone,
+  qualifying,
 }: {
   w: EventWindow;
   gaps: ReturnType<typeof coverageGaps>;
   needed: number;
   zone: string;
+  qualifying: number;
 }) {
   if (gaps.length === 0) {
     return (
       <p className="text-sm text-available">
         ✓ Covered: {needed === 1 ? 'someone is' : `${needed} drivers are`} available for the whole
-        race.
+        {qualifying > 0 ? ' of qualifying and the race.' : ' race.'}
       </p>
     );
   }
@@ -361,7 +373,8 @@ function GapSummary({
       <ul className="mt-1 flex flex-col gap-0.5 text-text-muted">
         {gaps.map((g) => (
           <li key={g.startSlot}>
-            {describeSlots(w, g.startSlot, g.endSlot, zone)} —{' '}
+            {describeSlots(w, g.startSlot, g.endSlot, zone)}
+            {g.startSlot < qualifying && ' (from qualifying)'} —{' '}
             {g.fewest === 0 ? 'nobody available' : `as few as ${g.fewest}`}
           </li>
         ))}

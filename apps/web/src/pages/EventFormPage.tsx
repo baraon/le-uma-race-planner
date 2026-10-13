@@ -9,6 +9,7 @@ import {
   toZonedInput,
   zoneAbbreviation,
   CAR_CLASSES,
+  DEFAULT_QUALIFYING_MINUTES,
   findTrack,
   STRATEGY_DEFAULTS,
   TRACKS,
@@ -22,6 +23,7 @@ import { useState } from 'react';
 import { TimeZoneSelect } from '../components/TimeZoneSelect';
 import { AppLink, button, Card, ErrorText, input, Muted } from '../components/ui';
 import { createEvent, updateEvent } from '../lib/api';
+import { formatDuration } from '../lib/format';
 import { useEvent, useGroup, useInvalidateEvents } from '../lib/queries';
 import { navigate } from '../lib/router';
 import { viewerTimeZone } from '../lib/session';
@@ -56,6 +58,8 @@ function EventForm({ group, me, event }: { group: GroupDetail; me: Me; event?: R
   const [local, setLocal] = useState(event ? toZonedInput(new Date(event.startsAt), myZone) : '');
   const [hours, setHours] = useState(event ? Math.floor(event.durationMinutes / 60) : 6);
   const [minutes, setMinutes] = useState(event ? event.durationMinutes % 60 : 0);
+  // Qualifying before the green flag: 0 = not included; ticking the box starts at the default.
+  const [qualifyingMinutes, setQualifyingMinutes] = useState(event?.qualifyingMinutes ?? 0);
   const [track, setTrack] = useState(event?.track ?? '');
   const [carClass, setCarClass] = useState(event?.carClass ?? '');
   const [trackZone, setTrackZone] = useState<string | null>(event?.trackTimezone ?? null);
@@ -93,6 +97,10 @@ function EventForm({ group, me, event }: { group: GroupDetail; me: Me; event?: R
   const startsAt = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(local)
     ? fromZonedInput(local, entryZone)
     : null;
+  const qualifyingStart =
+    startsAt && qualifyingMinutes > 0
+      ? new Date(startsAt.getTime() - qualifyingMinutes * 60_000)
+      : null;
   // A wall-clock time skipped by a daylight-saving change gets moved forward; say so.
   const shifted = startsAt !== null && toZonedInput(startsAt, entryZone) !== local;
   const valid =
@@ -108,6 +116,7 @@ function EventForm({ group, me, event }: { group: GroupDetail; me: Me; event?: R
         name: name.trim(),
         startsAt: startsAt!.toISOString(),
         durationMinutes,
+        qualifyingMinutes,
         track,
         carClass,
         trackTimezone: trackZone,
@@ -254,6 +263,46 @@ function EventForm({ group, me, event }: { group: GroupDetail; me: Me; event?: R
               <span aria-hidden>⚠ </span>Between 15 minutes and 48 hours, please.
             </p>
           )}
+        </fieldset>
+
+        <fieldset className="flex flex-col gap-2">
+          <legend className="sr-only">Qualifying</legend>
+          <div className="flex flex-wrap items-center gap-3 text-sm">
+            <label className="flex items-center gap-2 font-medium">
+              <input
+                type="checkbox"
+                checked={qualifyingMinutes > 0}
+                onChange={(e) =>
+                  setQualifyingMinutes(e.target.checked ? DEFAULT_QUALIFYING_MINUTES : 0)
+                }
+              />
+              Include qualifying
+            </label>
+            {qualifyingMinutes > 0 && (
+              <label className="flex items-center gap-2 text-text-muted">
+                lasting
+                <select
+                  value={qualifyingMinutes}
+                  onChange={(e) => setQualifyingMinutes(Number(e.target.value))}
+                  className={input}
+                  aria-label="Qualifying length"
+                >
+                  {Array.from(new Set([15, 30, 45, 60, 90, 120, qualifyingMinutes]))
+                    .sort((a, b) => a - b)
+                    .map((m) => (
+                      <option key={m} value={m}>
+                        {formatDuration(m)}
+                      </option>
+                    ))}
+                </select>
+              </label>
+            )}
+          </div>
+          <p className="text-xs text-text-muted">
+            {qualifyingStart
+              ? `Drivers mark availability from ${formatDateTime(qualifyingStart, myZone)} ${zoneAbbreviation(qualifyingStart, myZone)}, ${formatDuration(qualifyingMinutes)} before the green flag.`
+              : 'Adds time before the green flag to the availability timeline. The stint plan still starts at the green flag.'}
+          </p>
         </fieldset>
 
         <div className="grid gap-4 sm:grid-cols-3">
@@ -408,10 +457,11 @@ function EventForm({ group, me, event }: { group: GroupDetail; me: Me; event?: R
         {event &&
           startsAt &&
           (startsAt.getTime() !== new Date(event.startsAt).getTime() ||
-            durationMinutes !== event.durationMinutes) && (
+            durationMinutes !== event.durationMinutes ||
+            qualifyingMinutes !== event.qualifyingMinutes) && (
             <p className="text-sm text-text-muted">
               Drivers&apos; saved availability keeps its real-world times; any part outside the new
-              race window (or off its 15-minute grid) is removed.
+              window (or off its 15-minute grid) is removed.
             </p>
           )}
         <ErrorText error={save.error} />

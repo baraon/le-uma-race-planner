@@ -92,6 +92,9 @@ rule 6), the spreadsheet's figures are at most starting defaults.
 - Availability conflicts: flag stints whose driver or spotter is Not available / Maybe / no
   answer in that window. Driving-time fairness per driver (stints, laps, minutes). Projected laps.
 - Privacy policy covers pace data.
+- Optional qualifying per event ("Include qualifying", 1 h by default, length editable): the
+  availability timeline opens that much before the green flag. The stint plan still covers the
+  race only.
 - Smart "Fill to the flag" (`packages/shared/src/fill.ts`): greedy, stint by stint; scores each
   driver on availability (not available only as a last resort), preferred run length (default
   double stints), rest between runs (default 2 stints) and driving-time balance (equal, or faster

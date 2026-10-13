@@ -3,7 +3,7 @@
  * validation), so the two can't disagree.
  */
 import { z } from 'zod';
-import { AVAILABILITY_STATUSES, blocksOverlap } from './slots';
+import { AVAILABILITY_STATUSES, blocksOverlap, SLOT_MINUTES } from './slots';
 import { isValidTimeZone } from './timezones';
 import { FUEL_UNITS, STRATEGY_DEFAULTS } from './tracks';
 
@@ -149,6 +149,8 @@ export const eventInputSchema = z
     /** Green flag as a UTC instant, e.g. "2026-11-14T18:00:00Z". */
     startsAt: z.string().datetime(),
     durationMinutes: z.number().int().min(15).max(2880),
+    /** Qualifying before the green flag, in whole slots; 0 = not included. */
+    qualifyingMinutes: z.number().int().min(0).max(240).multipleOf(SLOT_MINUTES).default(0),
     track: optionalText(80),
     carClass: optionalText(40),
     trackTimezone: timeZoneSchema.nullish().transform((v) => v ?? null),
@@ -177,6 +179,7 @@ export const eventSchema = z.object({
   name: z.string(),
   startsAt: z.string().datetime(),
   durationMinutes: z.number().int(),
+  qualifyingMinutes: z.number().int(),
   track: z.string().nullable(),
   carClass: z.string().nullable(),
   trackTimezone: z.string().nullable(),
@@ -187,7 +190,10 @@ export const eventSchema = z.object({
   pitLaneLossSeconds: z.number(),
 });
 
-/** One driver's saved availability for an event, as slot blocks counted from the green flag. */
+/**
+ * One driver's saved availability for an event, as slot blocks counted from the start of the
+ * availability window: the green flag, or the start of qualifying when the event includes it.
+ */
 export const availabilityRowSchema = z.object({
   userId: uuid,
   blocks: z.array(slotBlockSchema),

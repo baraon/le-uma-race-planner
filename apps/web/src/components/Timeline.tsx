@@ -85,6 +85,36 @@ export function TimeAxis({
   );
 }
 
+/**
+ * Labels the qualifying slots of a row [from, to) and where the green flag falls. Renders nothing
+ * for rows after qualifying (or events without it). `qualifying` is the number of qualifying slots.
+ */
+export function SessionBand({
+  qualifying,
+  from = 0,
+  to,
+}: {
+  qualifying: number;
+  from?: number;
+  to: number;
+}) {
+  if (qualifying <= from) return null;
+  const share = (Math.min(to, qualifying) - from) / (to - from);
+  return (
+    <div className="flex h-4 text-[10px] leading-4 text-text-muted" aria-hidden>
+      <span
+        className="overflow-hidden whitespace-nowrap border-b-2 border-dashed border-text-muted pl-1"
+        style={{ width: `${share * 100}%` }}
+      >
+        Qualifying
+      </span>
+      {qualifying < to && (
+        <span className="whitespace-nowrap border-l-2 border-text pl-1 text-text">Green flag</span>
+      )}
+    </div>
+  );
+}
+
 /** Screen-reader text for the day and clock-change marks of a span, if any. */
 export function describeMarks(w: EventWindow, zone: string, from = 0, to = slotCount(w)): string {
   const { days, clockChanges } = axisMarks(w, zone, from, to);

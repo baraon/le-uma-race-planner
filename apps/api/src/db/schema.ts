@@ -127,6 +127,8 @@ export const events = pgTable('events', {
   startsAt: instant('starts_at').notNull(),
   durationMinutes: integer('duration_minutes').notNull(),
   slotMinutes: integer('slot_minutes').notNull().default(15),
+  /** Qualifying before the green flag; 0 = not included. Opens the availability window early. */
+  qualifyingMinutes: integer('qualifying_minutes').notNull().default(0),
   trackTimezone: text('track_timezone'),
   /** Drivers needed available at once; null = at least one. */
   minDrivers: smallint('min_drivers'),

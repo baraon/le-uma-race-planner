@@ -6,6 +6,7 @@
  */
 import {
   availabilityDuring,
+  availabilityWindow,
   averagePace,
   blocksToPaint,
   driverTotals,
@@ -15,6 +16,7 @@ import {
   localDayChanged,
   parseLapTime,
   planStints,
+  qualifyingSlots,
   suggestStints,
   slotCount,
   zoneAbbreviation,
@@ -136,9 +138,13 @@ function StintPlanEditor({
   const fuelUnit = event.fuelUnit === 'percent' ? '%' : 'L';
   const paceById = new Map<string, Pace>(paceRows.map((p) => [p.userId, p]));
   const average = averagePace([...paceById.values()]);
+  // Availability rows start at qualifying when the event includes it; the plan covers the race
+  // only, so drop the qualifying slots to line the paint up with the race window.
   const count = slotCount(w);
+  const lead = qualifyingSlots(event);
+  const marked = slotCount(availabilityWindow({ ...event, startsAt: w.startsAt }));
   const paintById = new Map(
-    availabilityRows.map((r) => [r.userId, blocksToPaint(r.blocks, count)]),
+    availabilityRows.map((r) => [r.userId, blocksToPaint(r.blocks, marked).slice(lead)]),
   );
   const paintOf = (id: string) => paintById.get(id) ?? blocksToPaint([], count);
 

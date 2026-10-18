@@ -1,6 +1,6 @@
 # Builds the API into a single bundled file, then ships it on a slim Node runtime.
 
-FROM node:22-alpine AS build
+FROM node:26-alpine AS build
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 RUN corepack enable
 WORKDIR /app
@@ -19,7 +19,7 @@ ARG APP_VERSION=dev
 ENV APP_VERSION=$APP_VERSION
 RUN pnpm --filter @le-uma/api build
 
-FROM node:22-alpine AS runtime
+FROM node:26-alpine AS runtime
 ENV NODE_ENV=production \
     MIGRATIONS_DIR=/app/migrations \
     PORT=3000

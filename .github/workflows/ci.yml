@@ -30,7 +30,7 @@ jobs:
     env:
       DATABASE_URL: postgres://leuma:leuma@localhost:5432/leuma
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: pnpm/action-setup@v4
 
@@ -76,7 +76,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: check
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build API image
         run: docker build -f docker/api.Dockerfile --build-arg APP_VERSION=${GITHUB_SHA::7} -t le-uma-api .
       - name: Build web image
